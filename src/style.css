@@ -1,0 +1,225 @@
+@import "tailwindcss";
+
+/* ✅ Inputs */
+input.p-inputtext,
+textarea.p-inputtextarea {
+  background-color: #ffffff !important;
+  color: #1f2b3a !important;
+  border: 1px solid #D2DFED !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+input.p-inputtext:focus,
+textarea.p-inputtextarea:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #A6BDD5 !important;
+}
+
+/* ✅ Botons */
+.p-button {
+  background-color: #7392b1 !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 500 !important;
+  transition: background-color 0.2s !important;
+}
+.p-button:hover {
+  background-color: #5c7894 !important;
+}
+
+.p-button-label {
+  color: white !important;
+}
+
+/* ✅ Dropdowns i Calendar */
+.p-dropdown,
+.p-calendar {
+  background-color: #ffffff !important;
+  border: 1px solid #D2DFED !important;
+  border-radius: 0.5rem !important;
+  color: #1f2b3a !important;
+}
+
+.p-dropdown:focus,
+.p-calendar:focus {
+  box-shadow: 0 0 0 2px #A6BDD5 !important;
+}
+
+/* ✅ Diàlegs (modals) */
+.p-dialog {
+  border: 1px solid #d2dfed !important;
+  border-radius: 1rem !important;
+  background-color: #ffffff !important;
+  color: #1f2b3a !important;
+}
+.p-dialog .p-dialog-header {
+  background-color: #f2f7fb !important;
+  color: #1f2b3a !important;
+  font-weight: 600 !important;
+}
+.p-dialog .p-dialog-footer {
+  background-color: #f2f7fb !important;
+}
+
+/* ✅ Toasts */
+.p-toast {
+  z-index: 9999 !important;
+}
+.p-toast-message {
+  background-color: #f2f7fb !important;
+  border-left: 5px solid #7392b1 !important;
+  color: #1f2b3a !important;
+}
+
+/* ✅ Missatges */
+.p-message {
+  background-color: #f2f7fb !important;
+  border: 1px solid #d2dfed !important;
+  color: #1f2b3a !important;
+}
+.p-message-error {
+  border-left: 5px solid #e57373 !important;
+}
+.p-message-success {
+  border-left: 5px solid #66bb6a !important;
+}
+.p-message-info {
+  border-left: 5px solid #64b5f6 !important;
+}
+
+/* ✅ Overlays: popups, calendaris, etc. */
+.p-overlaypanel,
+.p-datepicker,
+.p-dialog,
+.p-sidebar,
+.p-menu,
+.p-tieredmenu,
+.p-contextmenu,
+.p-tooltip,
+.p-confirm-popup {
+  background-color: #ffffff !important;
+  border: 1px solid #D2DFED !important;
+  color: #1f2b3a !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 20px rgba(115, 146, 177, 0.25) !important;
+}
+
+.p-dialog .p-dialog-header,
+.p-sidebar .p-sidebar-header,
+.p-overlaypanel .p-overlaypanel-content {
+  background-color: #F2F7FB !important;
+  color: #1f2b3a !important;
+  font-weight: 600 !important;
+}
+
+.p-dialog-footer,
+.p-sidebar-footer {
+  background-color: #F2F7FB !important;
+}
+
+.p-dialog .p-dialog-header-icon,
+.p-sidebar .p-sidebar-close {
+  color: #7392B1 !important;
+}
+.p-dialog .p-dialog-header-icon:hover,
+.p-sidebar .p-sidebar-close:hover {
+  background-color: #D2DFED !important;
+}
+
+/* ✅ Icona calendari (input) */
+.p-calendar .p-datepicker-trigger {
+  background-color: #7392B1 !important;
+  border-radius: 0.375rem !important;
+  padding: 0.25rem !important;
+  color: white !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease-in-out !important;
+}
+
+.p-calendar .p-datepicker-trigger:hover {
+  background-color: #5c7894 !important;
+}
+
+.p-calendar .p-datepicker-trigger svg {
+  fill: white !important;
+  stroke: white !important;
+  transition: fill 0.2s, stroke 0.2s !important;
+}
+
+.p-calendar .p-datepicker-trigger:hover svg {
+  fill: #A6BDD5 !important;
+  stroke: #A6BDD5 !important;
+}
+
+/* ✅ Contingut calendari desplegat */
+.p-datepicker {
+  background-color: #ffffff !important;
+  color: #1f2b3a !important;
+  border: 1px solid #D2DFED !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 20px rgba(115, 146, 177, 0.25) !important;
+}
+
+.p-datepicker .p-datepicker-header {
+  background-color: #f2f7fb !important;
+  color: #1f2b3a !important;
+}
+
+.p-datepicker td {
+  color: #1f2b3a !important;
+}
+
+.p-confirm-dialog-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60px;
+  padding-top: 1rem;
+}
+
+.confirm-accept-btn {
+  background-color: #ef4444 !important; /* Tailwind red-500 */
+  color: white !important;
+  border: none !important;
+  transition: background-color 0.2s ease;
+}
+
+.confirm-accept-btn:hover {
+  background-color: #dc2626 !important; /* Tailwind red-600 */
+}
+.p-button:hover {
+  background-color: #5c7894 !important;
+}
+button.confirm-accept-btn,
+.p-confirm-dialog-accept.confirm-accept-btn {
+  background-color: #ef4444 !important;
+  color: white !important;
+  border: none !important;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 3rem;
+  padding: 0 1rem;
+}
+
+button.confirm-accept-btn:hover,
+.p-confirm-dialog-accept.confirm-accept-btn:hover {
+  background-color: #dc2626 !important;
+}
+
+.dialog-content-custom {
+  background-color: #f9fbfd; /* fons suau blau-gris */
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.p-confirmdialog .p-dialog-content {
+  display: flex;
+  align-items: center;
+  padding-top: 1rem;
+}
