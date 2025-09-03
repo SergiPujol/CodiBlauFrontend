@@ -44,9 +44,9 @@
 
           <ion-button
               expand="block"
-              :color="selectedRhythm === 'Asystole' ? 'primary' : 'tertiary'"
-              :disabled="selectedRhythm === 'Asystole'"
-              @click="startSessionWithRhythm('Asystole')"
+              :color="selectedRhythm === 'asystole' ? 'primary' : 'tertiary'"
+              :disabled="selectedRhythm === 'asystole'"
+              @click="startSessionWithRhythm('asystole')"
           >Asistòlia</ion-button>
         </div>
       </div>
@@ -63,7 +63,7 @@
               <ion-button
                   expand="block"
                   color="success"
-                  @click="sendAction('adrenalina')"
+                  @click="sendAction('adrenaline')"
                   :class="{ 'animate-pulse': isAdrenalineExpired }"
               >
                 Adrenalina
@@ -77,7 +77,7 @@
             </div>
 
             <!-- Amiodarona -->
-            <ion-button expand="block" color="warning" @click="sendAction('amiodarona')">
+            <ion-button expand="block" color="warning" @click="sendAction('amiodarone')">
               Amiodarona
             </ion-button>
           </div>
@@ -87,7 +87,7 @@
         <div>
           <h2 class="font-bold text-lg mb-2">🛠️ Intervencions</h2>
           <div class="grid grid-cols-2 gap-2">
-            <ion-button expand="block" color="danger" @click="sendAction('desfibril·lació')">
+            <ion-button expand="block" color="danger" @click="sendAction('defibrillation')">
               Desfibril·lació
             </ion-button>
             <ion-button expand="block" color="medium" @click="sendAction('ROSC')">
@@ -237,7 +237,7 @@ const sendAction = async (type) => {
     console.log('' +
         'Acció enviada:', res.data)
 
-    if (type === 'adrenalina') {
+    if (type === 'adrenaline') {
       startAdrenalineTimer()
     }
   } catch (error) {
