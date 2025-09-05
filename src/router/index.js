@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from '@ionic/vue-router'
 import ActionView from '../views/ActionView.vue'
 import LogView from "../views/LogView.vue";
 import HomeView from "../views/HomeView.vue";
+import SessionListView from "../views/SessionListView.vue";
 
 const routes = [
     {
@@ -15,9 +16,9 @@ const routes = [
         component: ActionView
     },
     {
-        path: '/log/',
-        name: 'Log',
-        component: () => import('../views/LogView.vue')
+        path: '/sessions/',
+        name: 'SessionList',
+        component: SessionListView
     },
     {
         path: '/log/:id',

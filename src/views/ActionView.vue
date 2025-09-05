@@ -2,18 +2,30 @@
   <ion-page>
     <ion-header>
       <ion-toolbar color="primary">
+        <ion-buttons slot="start" v-if="!selectedRhythm">
+          <ion-button @click="goHome">
+            Inici
+          </ion-button>
+        </ion-buttons>
         <ion-title>Codi Blau</ion-title>
+        <ion-buttons slot="end" v-if="sessionId">
+          <ion-button color="danger" @click="confirmStopSession">
+            Finalitzar
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="pt-4 pb-4 px-6 space-y-6">
 
       <!-- Rellotge de sessió -->
-      <div v-if="sessionId" class="text-center text-xl font-mono mb-2">
-        {{ formattedTime }}
-      </div>
-      <div v-if="sessionId" class="text-center text-sm text-gray-500">
-        Sessió actual: {{ sessionId }}
+      <div v-if="sessionId" class="text-center mb-2">
+        <div class="text-3xl font-bold text-primary">
+          Sessió #{{ sessionId }}
+        </div>
+        <div class="text-2xl font-mono mt-1">
+          {{ formattedTime }}
+        </div>
       </div>
       <div v-if="cycleNumber" class="text-center text-sm text-gray-500">
         Cicle actual: {{ cycleNumber }}
@@ -28,26 +40,30 @@
       <div>
         <h2 class="font-bold text-lg mb-2">Ritme</h2>
         <div class="grid grid-cols-3 gap-2">
+          <!-- todo canviar els noms dels ritmes a anglès -->
           <ion-button
               expand="block"
               :color="selectedRhythm === 'FV' ? 'primary' : 'tertiary'"
               :disabled="selectedRhythm === 'FV'"
               @click="startSessionWithRhythm('FV')"
-          >FV</ion-button>
+          >FV
+          </ion-button>
 
           <ion-button
               expand="block"
               :color="selectedRhythm === 'AESP' ? 'primary' : 'tertiary'"
               :disabled="selectedRhythm === 'AESP'"
               @click="startSessionWithRhythm('AESP')"
-          >AESP</ion-button>
+          >AESP
+          </ion-button>
 
           <ion-button
               expand="block"
               :color="selectedRhythm === 'asystole' ? 'primary' : 'tertiary'"
               :disabled="selectedRhythm === 'asystole'"
               @click="startSessionWithRhythm('asystole')"
-          >Asistòlia</ion-button>
+          >Asistòlia
+          </ion-button>
         </div>
       </div>
 
@@ -108,11 +124,14 @@ import {
   IonToolbar,
   IonTitle,
   IonContent,
-  IonButton
+  IonButton,
+  alertController
 } from '@ionic/vue'
-import { ref, computed, onUnmounted } from 'vue'
+import {ref, computed, onUnmounted, onMounted} from 'vue'
 import api from '../axios'
+import {onBeforeRouteLeave, useRouter} from "vue-router";
 
+const router = useRouter()
 const sessionId = ref(null)
 const cycleId = ref(null)
 const cycleNumber = ref(null)
@@ -251,9 +270,119 @@ const formattedTime = computed(() => {
   return `${minutes}:${seconds}`
 })
 
+const stopSession = async () => {
+  if (!sessionId.value) return
+
+  try {
+    const now = new Date()
+    const end_time = now.toISOString().slice(0, 19).replace('T', ' ')
+
+    await api.put(`/sessions/${sessionId.value}`, {
+      end_time: end_time
+    })
+
+    console.log('Sessió acabada correctament')
+
+    // Netejar intervals
+    if (intervalId) clearInterval(intervalId)
+    if (adrenalineInterval.value) clearInterval(adrenalineInterval.value)
+    if (cycleIntervalId) clearInterval(cycleIntervalId)
+
+    // Reset variables
+    sessionId.value = null
+    cycleId.value = null
+    cycleNumber.value = null
+    selectedRhythm.value = null
+
+    // Tornar a Home
+    router.push({name: 'Home'})
+  } catch (error) {
+    console.error('Error finalitzant sessió:', error)
+  }
+}
+
+// 🔹 Funció nova per acabar sessió amb sendBeacon
+const stopSessionBeacon = () => {
+  if (!sessionId.value) return
+
+  const url = `${import.meta.env.VITE_API_URL}/sessions/${sessionId.value}/close`
+
+  const data = new FormData()
+  data.append("end", "1")
+
+  navigator.sendBeacon(url, data)
+  console.log("Sessió acabada via beacon")
+}
+
+
+// 🔹 Event per detectar tancament o recàrrega de pestanya
+onMounted(() => {
+  window.addEventListener('beforeunload', (e) => {
+    if (sessionId.value) {
+      stopSessionBeacon()
+      e.preventDefault()
+      e.returnValue = '' // mostra el popup nadiu del navegador
+    }
+  })
+})
+
+onBeforeRouteLeave(async (to, from, next) => {
+  if (sessionId.value) {
+    const alert = await alertController.create({
+      header: 'Sortir de la sessió',
+      message: 'Si surts es finalitzarà la sessió. Vols continuar?',
+      buttons: [
+        {
+          text: 'Cancel·lar',
+          role: 'cancel',
+          handler: () => {
+            next(false)
+          }
+        },
+        {
+          text: 'Sí, sortir',
+          role: 'confirm',
+          handler: async () => {
+            await stopSession()
+            next()
+          }
+        }
+      ]
+    })
+    await alert.present()
+  } else {
+    next()
+  }
+})
+
 onUnmounted(() => {
   if (intervalId) clearInterval(intervalId)
   if (adrenalineInterval.value) clearInterval(adrenalineInterval.value)
   if (cycleIntervalId) clearInterval(cycleIntervalId)
 })
+
+const confirmStopSession = async () => {
+  const alert = await alertController.create({
+    header: 'Finalitzar sessió',
+    message: 'Vols acabar la sessió actual?',
+    buttons: [
+      {
+        text: 'Cancel·lar',
+        role: 'cancel'
+      },
+      {
+        text: 'Sí, finalitzar',
+        role: 'confirm',
+        handler: () => {
+          stopSession()
+        }
+      }
+    ]
+  })
+  await alert.present()
+}
+
+const goHome = () => {
+  router.push({ name: 'Home' })
+}
 </script>
