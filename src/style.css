@@ -223,3 +223,23 @@ button.confirm-accept-btn:hover,
   align-items: center;
   padding-top: 1rem;
 }
+
+:root {
+  /* 🔹 Color personalitzat per als botons d’accions */
+  --ion-color-custom: #bfdbfe; /* blau clar (Tailwind blue-200) */
+  --ion-color-custom-rgb: 191, 219, 254;
+  --ion-color-custom-contrast: #000000; /* text negre */
+  --ion-color-custom-contrast-rgb: 0, 0, 0;
+  --ion-color-custom-shade: #a6c4eb;
+  --ion-color-custom-tint: #d0e5ff;
+}
+
+.ion-color-custom {
+  --ion-color-base: var(--ion-color-custom);
+  --ion-color-base-rgb: var(--ion-color-custom-rgb);
+  --ion-color-contrast: var(--ion-color-custom-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-custom-contrast-rgb);
+  --ion-color-shade: var(--ion-color-custom-shade);
+  --ion-color-tint: var(--ion-color-custom-tint);
+}
+
