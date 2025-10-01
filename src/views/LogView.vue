@@ -8,26 +8,53 @@
           </ion-button>
         </ion-buttons>
         <ion-title>Registre de la Sessió</ion-title>
+        <ion-buttons slot="end">
+          <ion-button fill="solid" color="light" @click="showInfo = true">
+            <ion-icon :icon="informationCircleOutline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="p-4">
+    <ion-modal :is-open="showInfo" @didDismiss="showInfo = false">
+      <ion-content
+          fullscreen
+          class="flex items-center justify-center bg-black"
+          :style="{ padding: 0, overflow: 'hidden' }"
+      >
+        <img
+            :src="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)
+        ? '/images/alritme%20desfibril·Lable.jpg'
+        : '/images/algoritme%20no%20desfibril·lable.jpg'"
+            alt="Algoritme"
+            class="w-full h-full object-contain"
+        />
+      </ion-content>
+    </ion-modal>
+
+    <ion-content class="p-4" :style="{'--background': backgroundColor}">
+      <div
+          v-if="sessionEnded"
+          class="w-full bg-red-100 text-red-800 text-center font-bold py-2 border-b border-red-300"
+      >
+        ⚠️ La sessió ha finalitzat
+      </div>
       <div class="flex w-full h-full">
         <!-- 1r terç: imatge del ritme -->
-        <div class="w-1/3 pr-4 flex items-center justify-center">
-          <img
-              :src="['FV', 'TV SP'].includes(rhythmType)
-              ? '/images/alritme%20desfibril·Lable.jpg'
-              : '/images/algoritme%20no%20desfibril·lable.jpg'"
-              :alt="['FV', 'TV SP'].includes(rhythmType)
-              ? 'Algoritme desfibril·lable'
-              : 'Algoritme no desfibril·lable'"
-              class="w-full h-auto rounded"
-          />
-        </div>
+<!--        <div class="w-1/3 pr-4 flex items-center justify-center">-->
+<!--          <img-->
+<!--              :src="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)-->
+<!--              ? '/images/alritme%20desfibril·Lable.jpg'-->
+<!--              : '/images/algoritme%20no%20desfibril·lable.jpg'"-->
+<!--              :alt="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)-->
+<!--              ? 'Algoritme desfibril·lable'-->
+<!--              : 'Algoritme no desfibril·lable'"-->
+<!--              class="w-full h-auto rounded"-->
+<!--          />-->
+<!--        </div>-->
 
         <!-- 2n terç: rellotges i botons -->
-        <div class="w-2/3 pr-4">
+        <div class="w-2/3 pr-4 flex flex-col justify-center">
           <div class="mb-4 text-center">
             <h2 class="text-xl font-bold">Sessió #{{ sessionNumber }}</h2>
           </div>
@@ -123,34 +150,34 @@
           </div>
 
 
-          <!-- Botons de ritme (només visuals) -->
-          <div class="grid grid-cols-5 gap-2 mb-6">
-            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">FV
-            </ion-button>
-            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">TV
-              SP
-            </ion-button>
-            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">
-              AESP
-            </ion-button>
-            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">
-              Asistòlia
-            </ion-button>
-            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">
-              ROSC
-            </ion-button>
-          </div>
+          <!--          &lt;!&ndash; Botons de ritme (només visuals) &ndash;&gt;-->
+          <!--          <div class="grid grid-cols-5 gap-2 mb-6">-->
+          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">FV-->
+          <!--            </ion-button>-->
+          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">TV-->
+          <!--              SP-->
+          <!--            </ion-button>-->
+          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">-->
+          <!--              AESP-->
+          <!--            </ion-button>-->
+          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">-->
+          <!--              Asistòlia-->
+          <!--            </ion-button>-->
+          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">-->
+          <!--              ROSC-->
+          <!--            </ion-button>-->
+          <!--          </div>-->
 
-          <!-- Botons d'accions (només visuals) -->
-          <div class="grid grid-cols-5 gap-2 mb-6">
-            <ion-button expand="block" fill="solid" color="custom">Adrenalina</ion-button>
-            <ion-button expand="block" fill="solid" color="custom">
-              <ion-icon slot="icon-only" :icon="flash"></ion-icon>
-            </ion-button>
-            <ion-button expand="block" fill="solid" color="custom">Amiodarona</ion-button>
-            <ion-button expand="block" fill="solid" color="custom">Altres medicacions</ion-button>
-            <ion-button expand="block" fill="solid" color="custom">Esdeveniments</ion-button>
-          </div>
+          <!--          &lt;!&ndash; Botons d'accions (només visuals) &ndash;&gt;-->
+          <!--          <div class="grid grid-cols-5 gap-2 mb-6">-->
+          <!--            <ion-button expand="block" fill="solid" color="custom">Adrenalina</ion-button>-->
+          <!--            <ion-button expand="block" fill="solid" color="custom">-->
+          <!--              <ion-icon slot="icon-only" :icon="flash"></ion-icon>-->
+          <!--            </ion-button>-->
+          <!--            <ion-button expand="block" fill="solid" color="custom">Amiodarona</ion-button>-->
+          <!--            <ion-button expand="block" fill="solid" color="custom">Altres medicacions</ion-button>-->
+          <!--            <ion-button expand="block" fill="solid" color="custom">Esdeveniments</ion-button>-->
+          <!--          </div>-->
         </div>
 
         <!-- 3r terç: registre -->
@@ -203,7 +230,8 @@ import echo from '../echo'
 import {computed, nextTick, onMounted, onUnmounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import api from "../axios"
-import {flash} from "ionicons/icons"
+import { IonModal } from "@ionic/vue";
+import {flash, informationCircleOutline} from "ionicons/icons"
 
 const route = useRoute()
 const router = useRouter()
@@ -212,9 +240,9 @@ const sessionId = route.params.id
 const actions = ref([])
 const loading = ref(true)
 const logContainer = ref(null)
-const rhythmType = ref(null)
 const sessionNumber = ref('--')
 const currentCycle = ref(null)
+const showInfo = ref(false)
 
 const sessionElapsed = ref(0)
 const cycleElapsed = ref(0)
@@ -223,6 +251,19 @@ let sessionTimer = null, cycleTimer = null, adrenalineTimer = null
 
 const CYCLE_DEFAULT_SECONDS = 120
 const ADRENALINE_EXPIRE_SECONDS = 240
+
+const sessionEnded = ref(false)
+
+const backgroundColor = computed(() => {
+  const mapping = {
+    'FV': '#bfdbfe',       // blau clar
+    'TV SP': '#bfdbfe',
+    'Asistòlia': '#fecaca', // vermell clar
+    'AESP': '#fecaca',
+    'ROSC': '#bbf7d0',     // verd clar
+  }
+  return mapping[currentCycle.value?.rhythm_type] || 'white'
+})
 
 function parseTimestamp(val) {
   if (val === null || val === undefined) return null
@@ -365,17 +406,57 @@ const typeColors = {
   capnograph: 'bg-indigo-100 text-indigo-800'
 }
 
+const rhythmColors = {
+  'FV': 'bg-blue-200',
+  'TV SP': 'bg-blue-200',
+  'Asistòlia': 'bg-red-200',
+  'AESP': 'bg-red-200',
+  'ROSC': 'bg-green-200'
+}
+
+const backgroundClass = computed(() => {
+  return rhythmColors[currentCycle.value?.rhythm_type] || ''
+})
+
 const goHome = () => router.push({name: 'Home'})
 
 onMounted(async () => {
   const channel = echo.channel(`session.${sessionId}`)
+      .listen('.SessionUpdated', (e) => {
+        console.log("Sessió actualitzada per WS:", e.session)
+
+        if (e.session.end_time) {
+          sessionEnded.value = true
+          clearTimers()
+
+          const sessionStartMs = parseTimestamp(e.session.start_time)
+          const sessionEndMs = parseTimestamp(e.session.end_time)
+
+          if (sessionStartMs && sessionEndMs) {
+            sessionElapsed.value = Math.floor((sessionEndMs - sessionStartMs) / 1000)
+          }
+
+          cycleElapsed.value = 0
+          adrenalineElapsed.value = 0
+
+          const endIso = sessionEndMs ? new Date(sessionEndMs).toISOString() : new Date().toISOString()
+          actions.value.push({
+            id: `session-end-${sessionId}`,
+            type: "Fi de la sessió",
+            executed_at: endIso,
+            session_id: sessionId,
+            isCycle: true
+          })
+          actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
+          scrollToBottom()
+        }
+      })
   loading.value = true
 
-  // ---------- MOURE/DECLARAR AQUÍ les dades de cicles i l'ajudant ----------
   const cycleMap = new Map()
 
   function resolveCycleData(cycle_id) {
-    if (!cycle_id) return { cycle_number: '--', cycle_rhythm_type: '--', startMs: null }
+    if (!cycle_id) return {cycle_number: '--', cycle_rhythm_type: '--', startMs: null}
     const c = cycleMap.get(cycle_id)
     return {
       cycle_number: c?.number ?? '--',
@@ -383,14 +464,18 @@ onMounted(async () => {
       startMs: c?.startMs ?? null
     }
   }
+
   // ---------------------------------------------------------------------
 
   try {
     const res = await api.get(`/sessions/${sessionId}`)
     const session = res.data
+    if (session.end_time) {
+      sessionEnded.value = true
+      clearTimers()
+    }
     sessionNumber.value = session.id ?? sessionId
 
-    // omple cycleMap amb els cicles retornats pel backend
     if (Array.isArray(session.cycles)) {
       session.cycles.forEach(c => {
         cycleMap.set(c.id, {
@@ -401,7 +486,6 @@ onMounted(async () => {
       })
     }
 
-    // Accions antigues: assigna cycle_number des del cycleMap (si té cycle_id)
     const oldActions = (Array.isArray(session.actions) ? session.actions : []).map(a => {
       const resolved = resolveCycleData(a.cycle_id)
       return {
@@ -412,7 +496,6 @@ onMounted(async () => {
       }
     })
 
-    // Accions virtuals de canvi de cicle (una per cada cicle existent)
     const cycleActions = (Array.isArray(session.cycles) ? session.cycles : []).map(c => ({
       id: `cycle-${c.id}`,
       type: `Canvi de cicle: ${c.number}, ${c.rhythm_type || ''}`.trim(),
@@ -422,12 +505,29 @@ onMounted(async () => {
       isCycle: true
     }))
 
-    // Combina i ordena
     actions.value = [...oldActions, ...cycleActions].sort(
         (a, b) => new Date(a.executed_at) - new Date(b.executed_at)
     )
 
-    // --------- NOVA PART: inicialitzar timers i currentCycle ---------
+    const endMsNow = parseTimestamp(session.end_time)
+    if (endMsNow) {
+      const endIso = new Date(endMsNow).toISOString()
+      const endActionId = `session-end-${sessionId}`
+
+      if (!actions.value.find(a => String(a.id) === String(endActionId))) {
+        actions.value.push({
+          id: endActionId,
+          type: 'Fi de la sessió',
+          executed_at: endIso,
+          session_id: session.id ?? sessionId,
+          isCycle: true
+        })
+
+        // reordenar després d'afegir
+        actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
+      }
+    }
+
     // Sessió
     const sessionStartMs = firstValidTimestamp(
         session.start_time, session.startTime, session.started_at, session.startedAt, session.created_at
@@ -440,7 +540,7 @@ onMounted(async () => {
       const lastCycle = session.cycles.reduce((prev, curr) =>
           parseTimestamp(curr.start_time) > parseTimestamp(prev.start_time) ? curr : prev
       )
-      currentCycle.value = { number: lastCycle.number, rhythm_type: lastCycle.rhythm_type }
+      currentCycle.value = {number: lastCycle.number, rhythm_type: lastCycle.rhythm_type}
       const cElapsed = lastCycle.start_time ? Math.floor((Date.now() - parseTimestamp(lastCycle.start_time)) / 1000) : 0
       startCycleTimer(cElapsed)
     }
@@ -459,6 +559,31 @@ onMounted(async () => {
           : 0
       startAdrenalineTimer(adElapsed)
     }
+
+    const sessionEndMs = parseTimestamp(session.end_time)
+
+    if (sessionEndMs) {
+      sessionEnded.value = true
+      clearTimers()
+
+      if (sessionStartMs) {
+        const duration = Math.floor((sessionEndMs - sessionStartMs) / 1000)
+        sessionElapsed.value = duration > 0 ? duration : 0
+      } else {
+        sessionElapsed.value = 0
+      }
+
+      cycleElapsed.value = 0
+      adrenalineElapsed.value = 0
+
+    } else {
+      const sElapsed = sessionStartMs
+          ? Math.floor((Date.now() - sessionStartMs) / 1000)
+          : 0
+      startSessionTimer(sElapsed)
+
+    }
+
     // ----------------------------------------------------------------
 
   } catch (err) {
@@ -467,10 +592,6 @@ onMounted(async () => {
     loading.value = false
   }
 
-
-  // --------------------------
-  // WebSockets (ara resolveCycleData està fora del try i accessible)
-  // --------------------------
   channel.subscribed(() => console.log(`✅ Subscrits a session.${sessionId}`))
 
   channel.listen('.actionregistered', (event) => {
@@ -502,8 +623,6 @@ onMounted(async () => {
     }
   })
 
-
-  // cyclestarted listener segueix igual
   channel.listen('.cyclestarted', (event) => {
     const startMs = firstValidTimestamp(event.started_at, event.start_time, event.executed_at, event.created_at)
     const executed_at_iso = startMs ? new Date(startMs).toISOString() : (event.executed_at ?? new Date().toISOString())
@@ -517,8 +636,7 @@ onMounted(async () => {
       isCycle: true
     })
 
-    rhythmType.value = event.rhythm_type
-    currentCycle.value = { number: event.number, rhythm_type: event.rhythm_type }
+    currentCycle.value = {number: event.number, rhythm_type: event.rhythm_type}
 
     const cElapsed = startMs ? Math.floor((Date.now() - startMs) / 1000) : 0
     startCycleTimer(cElapsed)
@@ -542,4 +660,21 @@ onMounted(async () => {
     visibility: hidden;
   }
 }
+
+.image-modal::part(backdrop) {
+  background: rgba(0,0,0,0.6);
+}
+
+.image-modal::part(content) {
+  width: 95vw;        /* mida màxima */
+  height: 95vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+
+
 </style>
