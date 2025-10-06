@@ -141,7 +141,7 @@
 
           <!-- Info cicle -->
           <div class="my-6 text-center">
-            <div class="text-lg font-bold text-purple-600">
+            <div class="text-4xl font-bold ">
               {{ currentCycle?.rhythm_type }}
             </div>
             <div class="text-sm text-gray-500 mt-6">
@@ -514,10 +514,25 @@ onMounted(async () => {
       const endIso = new Date(endMsNow).toISOString()
       const endActionId = `session-end-${sessionId}`
 
+      const sessionStartMs = firstValidTimestamp(
+          session.start_time,
+          session.startTime,
+          session.started_at,
+          session.startedAt,
+          session.created_at
+      )
+
       if (!actions.value.find(a => String(a.id) === String(endActionId))) {
+        let durationStr = ''
+        if (sessionStartMs && endMsNow) {
+          const totalSeconds = Math.floor((endMsNow - sessionStartMs) / 1000)
+          const min = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
+          const sec = String(totalSeconds % 60).padStart(2, '0')
+          durationStr = ` (Durada: ${min}:${sec})`
+        }
         actions.value.push({
           id: endActionId,
-          type: 'Fi de la sessió',
+          type: `Fi de la sessió${durationStr}`,
           executed_at: endIso,
           session_id: session.id ?? sessionId,
           isCycle: true
@@ -532,6 +547,24 @@ onMounted(async () => {
     const sessionStartMs = firstValidTimestamp(
         session.start_time, session.startTime, session.started_at, session.startedAt, session.created_at
     )
+
+    if (sessionStartMs) {
+      const startIso = new Date(sessionStartMs).toISOString()
+      const startActionId = `session-start-${sessionId}`
+
+      if (!actions.value.find(a => String(a.id) === String(startActionId))) {
+        actions.value.push({
+          id: startActionId,
+          type: "Inici de la sessió",
+          executed_at: startIso,
+          session_id: session.id ?? sessionId,
+          isCycle: true
+        })
+
+        actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
+      }
+    }
+
     const sElapsed = sessionStartMs ? Math.floor((Date.now() - sessionStartMs) / 1000) : 0
     startSessionTimer(sElapsed)
 

@@ -9,45 +9,54 @@
         <ion-title>Sessions</ion-title>
 
         <ion-buttons slot="start" class="ml-2">
-          <ion-button ref="filterBtn" @click="toggleFilter">
+          <ion-button @click="showFilter = true">
             <ion-icon :icon="filterIcon"></ion-icon>
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
+    </ion-header>
 
       <!-- menú de filtres -->
-      <div
-          v-if="showFilter"
-          ref="filterMenu"
-          class="absolute bg-white border border-gray-300 rounded shadow z-50 p-2 flex flex-col items-center gap-3"
-          :style="filterMenuStyle"
-      >
-        <ion-button
-            :fill="currentFilter === 'active' ? 'solid' : 'outline'"
-            color="primary"
-            @click="setFilter('active')"
-            class="w-40 h-12"
-        >
-          Actives
-        </ion-button>
-        <ion-button
-            :fill="currentFilter === 'finished' ? 'solid' : 'outline'"
-            color="primary"
-            @click="setFilter('finished')"
-            class="w-40 h-12"
-        >
-          Finalitzades
-        </ion-button>
-        <ion-button
-            :fill="currentFilter === 'all' ? 'solid' : 'outline'"
-            color="primary"
-            @click="setFilter('all')"
-            class="w-40 h-12"
-        >
-          Totes les sessions
-        </ion-button>
-      </div>
-    </ion-header>
+    <ion-modal :is-open="showFilter" @didDismiss="showFilter = false">
+      <ion-header>
+        <ion-toolbar color="primary">
+          <ion-title>Filtres</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="applyFilters">Aplica</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="p-4">
+        <h3 class="font-bold mb-4">Estat</h3>
+        <div class="flex gap-3 mb-6">
+          <ion-button
+              :fill="currentFilter === 'active' ? 'solid' : 'outline'"
+              @click="currentFilter = 'active'"
+          >
+            Actives
+          </ion-button>
+          <ion-button
+              :fill="currentFilter === 'finished' ? 'solid' : 'outline'"
+              @click="currentFilter = 'finished'"
+          >
+            Finalitzades
+          </ion-button>
+          <ion-button
+              :fill="currentFilter === 'all' ? 'solid' : 'outline'"
+              @click="currentFilter = 'all'"
+          >
+            Totes
+          </ion-button>
+        </div>
+
+        <h3 class="font-bold mb-2">Per Data</h3>
+        <ion-datetime
+            presentation="date"
+            v-model="filterDate"
+        ></ion-datetime>
+      </ion-content>
+    </ion-modal>
 
     <ion-content class="p-4">
       <div v-if="loading" class="text-center mt-6">
@@ -68,7 +77,7 @@
         >
           <ion-label>
             <h2 class="font-bold">Sessió #{{ session.id }}</h2>
-            <p>Hora d’inici: {{ formatHour(session.start_time) }}</p>
+            <p>Data: {{ formatDate(session.start_time) }}  {{ formatHour(session.start_time) }}</p>
           </ion-label>
         </ion-item>
       </ion-list>
@@ -161,6 +170,15 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside)
 })
+
+const formatDate = (dateString) => {
+  const d = new Date(dateString.replace(" ", "T"))
+  return d.toLocaleDateString("ca-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  })
+}
 
 const formatHour = (dateString) => {
   const d = new Date(dateString.replace(" ", "T"))
