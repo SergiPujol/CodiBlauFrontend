@@ -430,7 +430,6 @@ const startSessionWithRhythm = async (rhythm) => {
           String(now.getSeconds()).padStart(2, '0');
 
       const res = await api.post('/sessions', {
-        rhythm_type: rhythm,
         start_time: start_time
       });
 
@@ -460,9 +459,7 @@ const startSessionWithRhythm = async (rhythm) => {
   } else {
     // Crear nou cicle dins la sessió existent
     try {
-      const res = await api.post(`/sessions/${sessionId.value}/cycles`, {
-        rhythm_type: rhythm
-      });
+      const res = await api.post(`/sessions/${sessionId.value}/cycles`);
       cycleId.value = res.data.id;
       cycleNumber.value = res.data.number;
       selectedRhythm.value = rhythm;
