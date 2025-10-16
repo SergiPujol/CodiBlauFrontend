@@ -243,12 +243,12 @@
       <div v-if="sessionId" class="grid grid-cols-2 gap-4 mt-6">
         <ion-button expand="block" fill="outline"
                     color="medium" class="text-black font-bold hover:bg-gray-100"
-                    @click="confirmStopSession">
+                    @click="confirmStopSession('exitus')">
           Èxitus
         </ion-button>
         <ion-button expand="block" fill="outline"
                     color="medium" class="text-black font-bold hover:bg-gray-100"
-                    @click="confirmStopSession"
+                    @click="confirmStopSession('terminus')"
                     :disabled="selectedRhythm.value === 'ROSC'">
           Tèrminus
         </ion-button>
@@ -275,6 +275,7 @@ import api from '../axios'
 import 'ionicons'
 import {onBeforeRouteLeave, useRouter} from "vue-router";
 import {flash} from 'ionicons/icons'
+import {jsPDF} from "jspdf";
 
 const router = useRouter()
 const sessionId = ref(null)
@@ -661,7 +662,7 @@ onUnmounted(() => {
   if (cycleIntervalId) clearInterval(cycleIntervalId)
 })
 
-const confirmStopSession = async () => {
+const confirmStopSession = async (endType = 'terminus') => {
   const alert = await alertController.create({
     header: 'Finalitzar la sessió',
     message: 'Vols acabar la sessió actual?',
@@ -671,15 +672,179 @@ const confirmStopSession = async () => {
         role: 'cancel'
       },
       {
-        text: 'Sí, finalitzar',
+        text: 'Sí, finalitzar sense PDF',
         role: 'confirm',
-        handler: () => {
-          stopSession()
+        handler: async () => {
+          await stopSession()
+        }
+      },
+      {
+        text: 'Sí, finalitzar i generar PDF',
+        role: 'confirm',
+        handler: async () => {
+          try {
+            await generatePdfForSession()
+          } catch (err) {
+            console.error("Error generant PDF:", err)
+          } finally {
+            await stopSession()
+          }
         }
       }
     ]
   })
   await alert.present()
+}
+
+const generatePdfForSession = async () => {
+  if (!sessionId.value) {
+    console.warn("No hi ha cap sessió activa per generar PDF")
+    return
+  }
+
+  try {
+    const typeTranslations = {
+      adrenaline: 'Adrenalina',
+      'amiodarone 300': 'Amiodarona 300mg',
+      'amiodarone 150': 'Amiodarona 150mg',
+      defibrillation: 'Desfibril·lació',
+      rosc: 'ROSC',
+      shock: 'Descàrrega',
+      other_medication: 'Altres medicacions',
+      event: 'Esdeveniment',
+      iv: 'Accés IV',
+      io: 'Accés IO',
+      iot: 'IOT',
+      supraglottic: 'Accés supraglòtic',
+      cardiocompressor: 'Cardiocompressor',
+      capnograph: 'Capnògraf'
+    }
+
+    const cycleTypeTranslations = {
+      shockable: 'Ritme desfibril·lable',
+      'non-shockable': 'Ritme no desfibril·lable',
+      rosc: 'ROSC',
+      unknown: 'Tipus desconegut'
+    }
+
+    // Peticions al backend
+    const [actionsRes, cyclesRes] = await Promise.all([
+      api.get(`/sessions/${sessionId.value}/actions`),
+      api.get(`/sessions/${sessionId.value}/cycles`)
+    ])
+
+    const actions = actionsRes.data || []
+    const cycles = cyclesRes.data || []
+
+    // Map i ordenació
+    const cycleMap = {}
+    for (const c of cycles) {
+      cycleMap[c.id] = c
+    }
+
+    actions.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
+
+    const doc = new jsPDF({ unit: "mm", format: "a4" })
+    const marginLeft = 15
+    let y = 20
+
+    doc.setFontSize(14)
+    doc.text(`Sessió #${sessionId.value}`, marginLeft, y)
+    y += 8
+
+    doc.setFontSize(10)
+    const nowStr = new Date().toLocaleString('ca-ES')
+    doc.text(`PDF generat: ${nowStr}`, marginLeft, y)
+    y += 8
+
+    doc.setFontSize(12)
+    doc.text("Cicles i Accions", marginLeft, y)
+    y += 8
+
+    // Agrupem accions per número de cicle
+    const actionsByCycle = {}
+    for (const a of actions) {
+      const c = cycleMap[a.cycle_id]
+      const number = c ? c.number : '(sense cicle)'
+      if (!actionsByCycle[number]) actionsByCycle[number] = []
+      actionsByCycle[number].push(a)
+    }
+
+    const sortedCycleNumbers = Object.keys(actionsByCycle)
+        .map(n => isNaN(Number(n)) ? n : Number(n))
+        .sort((a, b) => a - b)
+
+    doc.setFontSize(10)
+    for (const cnum of sortedCycleNumbers) {
+      if (y > 275) {
+        doc.addPage()
+        y = 20
+      }
+
+      // Ara busquem pel número correctament (convertint-lo a número si cal)
+      const cycle = cycles.find(c => String(c.number) === String(cnum))
+      const cycleType = cycle
+          ? (cycleTypeTranslations[cycle.rhythm_type] || cycle.rhythm_type || 'Tipus desconegut')
+          : 'Tipus desconegut'
+
+// Formatem hora d'inici si existeix
+      let startTimeStr = ''
+      if (cycle?.start_time) {
+        const date = new Date(cycle.start_time)
+        const hh = String(date.getHours()).padStart(2, '0')
+        const mm = String(date.getMinutes()).padStart(2, '0')
+        const ss = String(date.getSeconds()).padStart(2, '0')
+        startTimeStr = `${hh}:${mm}:${ss}`
+      }
+
+      doc.setFont(undefined, "bold")
+      const cycleHeader = `Cicle ${cnum} — ${cycleType}${startTimeStr ? `  ${startTimeStr}` : ''}`
+      doc.text(cycleHeader, marginLeft, y)
+
+      doc.setFont(undefined, "normal")
+      y += 6
+
+      const list = actionsByCycle[cnum]
+      for (const a of list) {
+        if (y > 275) {
+          doc.addPage()
+          y = 20
+        }
+
+        // Format data DD/MM/YYYY HH:mm:ss
+        let time = ''
+        if (a.executed_at) {
+          const date = new Date(a.executed_at)
+          const dd = String(date.getDate()).padStart(2, '0')
+          const mm = String(date.getMonth() + 1).padStart(2, '0')
+          const yyyy = date.getFullYear()
+          const hh = String(date.getHours()).padStart(2, '0')
+          const min = String(date.getMinutes()).padStart(2, '0')
+          const ss = String(date.getSeconds()).padStart(2, '0')
+          time = `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`
+        }
+
+        const translatedType = typeTranslations[a.type] || a.type
+        const valuePart = a.value ? ` — ${a.value}` : ''
+        const line = `${time} • ${translatedType}${valuePart}`
+
+        const maxWidth = 180
+        const splitted = doc.splitTextToSize(line, maxWidth)
+        doc.text(splitted, marginLeft, y)
+        y += 6 * splitted.length
+      }
+
+      y += 4
+    }
+
+    const filename = `session_${sessionId.value}.pdf`
+    doc.save(filename)
+    console.log("PDF generat:", filename)
+
+  } catch (err) {
+    console.error("Error recuperant dades o generant PDF:", err)
+    throw err
+  }
 }
 
 const goHome = () => {

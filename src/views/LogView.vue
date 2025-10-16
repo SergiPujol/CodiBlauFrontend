@@ -41,17 +41,17 @@
       </div>
       <div class="flex w-full h-full">
         <!-- 1r terç: imatge del ritme -->
-<!--        <div class="w-1/3 pr-4 flex items-center justify-center">-->
-<!--          <img-->
-<!--              :src="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)-->
-<!--              ? '/images/alritme%20desfibril·Lable.jpg'-->
-<!--              : '/images/algoritme%20no%20desfibril·lable.jpg'"-->
-<!--              :alt="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)-->
-<!--              ? 'Algoritme desfibril·lable'-->
-<!--              : 'Algoritme no desfibril·lable'"-->
-<!--              class="w-full h-auto rounded"-->
-<!--          />-->
-<!--        </div>-->
+        <div class="w-1/3 pr-4 flex items-center justify-center">
+          <img
+              :src="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)
+              ? '/images/alritme%20desfibril·Lable.jpg'
+              : '/images/algoritme%20no%20desfibril·lable.jpg'"
+              :alt="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)
+              ? 'Algoritme desfibril·lable'
+              : 'Algoritme no desfibril·lable'"
+              class="w-full h-auto rounded"
+          />
+        </div>
 
         <!-- 2n terç: rellotges i botons -->
         <div class="w-2/3 pr-4 flex flex-col justify-center">
