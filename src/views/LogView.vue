@@ -420,39 +420,10 @@ const backgroundClass = computed(() => {
 
 const goHome = () => router.push({name: 'Home'})
 
+let eventSource = null;
+
 onMounted(async () => {
-  const channel = echo.channel(`session.${sessionId}`)
-      .listen('.SessionUpdated', (e) => {
-        console.log("Sessió actualitzada per WS:", e.session)
-
-        if (e.session.end_time) {
-          sessionEnded.value = true
-          clearTimers()
-
-          const sessionStartMs = parseTimestamp(e.session.start_time)
-          const sessionEndMs = parseTimestamp(e.session.end_time)
-
-          if (sessionStartMs && sessionEndMs) {
-            sessionElapsed.value = Math.floor((sessionEndMs - sessionStartMs) / 1000)
-          }
-
-          cycleElapsed.value = 0
-          adrenalineElapsed.value = 0
-
-          const endIso = sessionEndMs ? new Date(sessionEndMs).toISOString() : new Date().toISOString()
-          actions.value.push({
-            id: `session-end-${sessionId}`,
-            type: "Fi de la sessió",
-            executed_at: endIso,
-            session_id: sessionId,
-            isCycle: true
-          })
-          actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
-          scrollToBottom()
-        }
-      })
   loading.value = true
-
   const cycleMap = new Map()
 
   function resolveCycleData(cycle_id) {
@@ -464,8 +435,6 @@ onMounted(async () => {
       startMs: c?.startMs ?? null
     }
   }
-
-  // ---------------------------------------------------------------------
 
   try {
     const res = await api.get(`/sessions/${sessionId}`)
@@ -509,66 +478,13 @@ onMounted(async () => {
         (a, b) => new Date(a.executed_at) - new Date(b.executed_at)
     )
 
-    const endMsNow = parseTimestamp(session.end_time)
-    if (endMsNow) {
-      const endIso = new Date(endMsNow).toISOString()
-      const endActionId = `session-end-${sessionId}`
-
-      const sessionStartMs = firstValidTimestamp(
-          session.start_time,
-          session.startTime,
-          session.started_at,
-          session.startedAt,
-          session.created_at
-      )
-
-      if (!actions.value.find(a => String(a.id) === String(endActionId))) {
-        let durationStr = ''
-        if (sessionStartMs && endMsNow) {
-          const totalSeconds = Math.floor((endMsNow - sessionStartMs) / 1000)
-          const min = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
-          const sec = String(totalSeconds % 60).padStart(2, '0')
-          durationStr = ` (Durada: ${min}:${sec})`
-        }
-        actions.value.push({
-          id: endActionId,
-          type: `Fi de la sessió${durationStr}`,
-          executed_at: endIso,
-          session_id: session.id ?? sessionId,
-          isCycle: true
-        })
-
-        // reordenar després d'afegir
-        actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
-      }
-    }
-
-    // Sessió
+    // Timers inicials
     const sessionStartMs = firstValidTimestamp(
         session.start_time, session.startTime, session.started_at, session.startedAt, session.created_at
     )
-
-    if (sessionStartMs) {
-      const startIso = new Date(sessionStartMs).toISOString()
-      const startActionId = `session-start-${sessionId}`
-
-      if (!actions.value.find(a => String(a.id) === String(startActionId))) {
-        actions.value.push({
-          id: startActionId,
-          type: "Inici de la sessió",
-          executed_at: startIso,
-          session_id: session.id ?? sessionId,
-          isCycle: true
-        })
-
-        actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
-      }
-    }
-
     const sElapsed = sessionStartMs ? Math.floor((Date.now() - sessionStartMs) / 1000) : 0
     startSessionTimer(sElapsed)
 
-    // Cicle: agafa l'últim cicle existent
     if (Array.isArray(session.cycles) && session.cycles.length > 0) {
       const lastCycle = session.cycles.reduce((prev, curr) =>
           parseTimestamp(curr.start_time) > parseTimestamp(prev.start_time) ? curr : prev
@@ -578,7 +494,6 @@ onMounted(async () => {
       startCycleTimer(cElapsed)
     }
 
-    // Adrenalina: agafa l'última acció d'adrenalina
     const adrenalineActions = actions.value.filter(a =>
         String(a.type || '').toLowerCase().includes('adrenaline') ||
         String(a.type || '').toLowerCase().includes('adrenalina')
@@ -593,92 +508,91 @@ onMounted(async () => {
       startAdrenalineTimer(adElapsed)
     }
 
-    const sessionEndMs = parseTimestamp(session.end_time)
+    // Subscriure SSE
+    eventSource = new EventSource(`http://localhost:8000/api/sessions/${sessionId}/stream`)
 
-    if (sessionEndMs) {
-      sessionEnded.value = true
-      clearTimers()
+    eventSource.onmessage = (e) => {
+      const payload = JSON.parse(e.data)
+      const type = payload.event
+      const event = payload.data
 
-      if (sessionStartMs) {
-        const duration = Math.floor((sessionEndMs - sessionStartMs) / 1000)
-        sessionElapsed.value = duration > 0 ? duration : 0
-      } else {
-        sessionElapsed.value = 0
+      switch(type) {
+        case 'SessionUpdated':
+          if (event.end_time) {
+            sessionEnded.value = true
+            clearTimers()
+          }
+          break
+
+        case 'actionregistered':
+          const executedMs = firstValidTimestamp(event.executed_at, event.started_at, event.created_at)
+          const executedIso = executedMs ? new Date(executedMs).toISOString() : (event.executed_at ?? new Date().toISOString())
+
+          if (!actions.value.find(a => String(a.id) === String(event.id))) {
+            const resolved = resolveCycleData(event.cycle_id)
+            const newAction = {
+              id: event.id,
+              type: event.type,
+              executed_at: executedIso,
+              session_id: event.session_id,
+              value: event.value || null,
+              isCycle: false,
+              cycle_number: event.cycle_number ?? resolved.cycle_number,
+              cycle_rhythm_type: event.cycle_rhythm_type ?? resolved.cycle_rhythm_type
+            }
+            actions.value.push(newAction)
+            actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
+
+            if (String(event.type || '').toLowerCase().includes('adrenaline') ||
+                String(event.type || '').toLowerCase().includes('adrenalina')) {
+              startAdrenalineTimerFromMs(executedMs ?? event.executed_at)
+            }
+
+            scrollToBottom()
+          }
+          break
+
+        case 'cyclestarted':
+          const startMs = firstValidTimestamp(event.started_at, event.start_time, event.executed_at, event.created_at)
+          const executed_at_iso = startMs ? new Date(startMs).toISOString() : (event.executed_at ?? new Date().toISOString())
+
+          actions.value.push({
+            id: `cycle-${event.id}`,
+            type: `Canvi de cicle: ${event.number}, ${event.rhythm_type || ''}`.trim(),
+            executed_at: executed_at_iso,
+            session_id: event.session_id,
+            cycle_number: event.number,
+            isCycle: true
+          })
+
+          currentCycle.value = {number: event.number, rhythm_type: event.rhythm_type}
+          const cElapsed = startMs ? Math.floor((Date.now() - startMs) / 1000) : 0
+          startCycleTimer(cElapsed)
+
+          actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
+          scrollToBottom()
+          break
+
+        default:
+          console.warn('SSE desconegut:', type, event)
       }
-
-      cycleElapsed.value = 0
-      adrenalineElapsed.value = 0
-
-    } else {
-      const sElapsed = sessionStartMs
-          ? Math.floor((Date.now() - sessionStartMs) / 1000)
-          : 0
-      startSessionTimer(sElapsed)
-
     }
 
-    // ----------------------------------------------------------------
+    eventSource.onerror = (err) => console.error('❌ SSE error:', err)
 
   } catch (err) {
     console.error('Error carregant sessió:', err)
   } finally {
     loading.value = false
   }
+})
 
-  channel.subscribed(() => console.log(`✅ Subscrits a session.${sessionId}`))
-
-  channel.listen('.actionregistered', (event) => {
-    const executedMs = firstValidTimestamp(event.executed_at, event.started_at, event.created_at)
-    const executedIso = executedMs ? new Date(executedMs).toISOString() : (event.executed_at ?? new Date().toISOString())
-
-    if (!actions.value.find(a => String(a.id) === String(event.id))) {
-      const resolved = resolveCycleData(event.cycle_id)
-      const newAction = {
-        id: event.id,
-        type: event.type,
-        executed_at: executedIso,
-        session_id: event.session_id,
-        value: event.value || null,
-        isCycle: false,
-        cycle_number: event.cycle_number ?? resolved.cycle_number,
-        cycle_rhythm_type: event.cycle_rhythm_type ?? resolved.cycle_rhythm_type
-      }
-      actions.value.push(newAction)
-      actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
-
-      // Només adrenalina toca el timer
-      if (String(event.type || '').toLowerCase().includes('adrenaline') ||
-          String(event.type || '').toLowerCase().includes('adrenalina')) {
-        startAdrenalineTimerFromMs(executedMs ?? event.executed_at)
-      }
-
-      scrollToBottom()
-    }
-  })
-
-  channel.listen('.cyclestarted', (event) => {
-    const startMs = firstValidTimestamp(event.started_at, event.start_time, event.executed_at, event.created_at)
-    const executed_at_iso = startMs ? new Date(startMs).toISOString() : (event.executed_at ?? new Date().toISOString())
-
-    actions.value.push({
-      id: `cycle-${event.id}`,
-      type: `Canvi de cicle: ${event.number}, ${event.rhythm_type || ''}`.trim(),
-      executed_at: executed_at_iso,
-      session_id: event.session_id,
-      cycle_number: event.number,
-      isCycle: true
-    })
-
-    currentCycle.value = {number: event.number, rhythm_type: event.rhythm_type}
-
-    const cElapsed = startMs ? Math.floor((Date.now() - startMs) / 1000) : 0
-    startCycleTimer(cElapsed)
-
-    actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
-    scrollToBottom()
-  })
-
-  channel.error(error => console.error('❌ Error al canal:', error))
+onUnmounted(() => {
+  if (eventSource) {
+    eventSource.close()
+    eventSource = null
+  }
+  clearTimers()
 })
 
 </script>
