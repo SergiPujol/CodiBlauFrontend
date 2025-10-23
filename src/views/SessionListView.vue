@@ -3,9 +3,10 @@
     <ion-header>
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-button @click="goHome">Inici</ion-button>
+          <ion-button fill="clear" color="light" @click="$router.back()">
+            <ion-icon :icon="arrowBackOutline" slot="icon-only"></ion-icon>
+          </ion-button>
         </ion-buttons>
-
         <ion-title>Sessions</ion-title>
 
         <ion-buttons slot="start">
@@ -87,7 +88,9 @@
         </div>
 
         <div v-if="filterStartDate || filterEndDate" class="mt-2 text-sm text-gray-600 text-center">
-          Rang seleccionat: <span>{{ filterStartDate||'---' }}</span> - <span>{{ filterEndDate||'---' }}</span>
+          Rang seleccionat:
+          <span>{{ filterStartDate ? formatDate(filterStartDate) + ' ' + formatHour(filterStartDate) : '---' }}</span> -
+          <span>{{ filterEndDate ? formatDate(filterEndDate) + ' ' + formatHour(filterEndDate) : '---' }}</span>
         </div>
 
         <!-- Botó de reiniciar -->
@@ -134,7 +137,7 @@ import {
 import {ref, onMounted, computed} from "vue"
 import api from "../axios"
 import {useRouter} from "vue-router"
-import { optionsOutline, closeCircleOutline } from "ionicons/icons"
+import {optionsOutline, closeCircleOutline, arrowBackOutline} from "ionicons/icons"
 
 const router = useRouter()
 const sessions = ref([])

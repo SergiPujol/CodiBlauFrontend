@@ -3,18 +3,33 @@
     <ion-header>
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-button @click="goHome">
-            Inici
+          <ion-button fill="clear" color="light" @click="$router.back()">
+            <ion-icon :icon="arrowBackOutline" slot="icon-only"></ion-icon>
           </ion-button>
         </ion-buttons>
         <ion-title>Registre de la Sessió</ion-title>
-        <ion-buttons slot="end">
+        <ion-buttons slot="end" class="mr-3">
           <ion-button fill="solid" color="light" @click="showInfo = true">
             <ion-icon :icon="informationCircleOutline" slot="icon-only"></ion-icon>
+          </ion-button>
+          <ion-button v-if="sessionEnded" fill="solid" color="primary" @click="showConciliateAlert = true">
+            Conciliar
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
+
+    <ion-alert
+        :is-open="showConciliateAlert"
+        header="Introdueix el pacient"
+        :inputs="[
+      { name: 'patientName', type: 'text', placeholder: 'Nom del pacient' }
+    ]"
+        :buttons="[
+      { text: 'Cancel·lar', role: 'cancel', handler: () => showConciliateAlert = false },
+      { text: 'Acceptar', handler: handlePatientName }
+    ]"
+    />
 
     <ion-modal :is-open="showInfo" @didDismiss="showInfo = false">
       <ion-content
@@ -65,14 +80,14 @@
               <h3 class="font-bold text-lg">Sessió</h3>
               <div class="relative w-28 h-28 mx-auto">
                 <svg class="transform -rotate-90 w-28 h-28">
-                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="6" fill="transparent"
+                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
                           stroke="currentColor"/>
                   <circle
                       cx="56"
                       cy="56"
                       r="50"
                       class="text-blue-500"
-                      stroke-width="6"
+                      stroke-width="10"
                       fill="transparent"
                       stroke="currentColor"
                       stroke-dasharray="314"
@@ -91,14 +106,14 @@
               <h3 class="font-bold text-lg">Cicle</h3>
               <div class="relative w-28 h-28 mx-auto" :class="{ 'intense-blink': cycleElapsed >= 100 }">
                 <svg class="transform -rotate-90 w-28 h-28">
-                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="6" fill="transparent"
+                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
                           stroke="currentColor"/>
                   <circle
                       cx="56"
                       cy="56"
                       r="50"
                       class="text-green-500"
-                      stroke-width="6"
+                      stroke-width="10"
                       fill="transparent"
                       stroke="currentColor"
                       stroke-dasharray="314"
@@ -117,14 +132,14 @@
               <h3 class="font-bold text-lg">Adrenalina</h3>
               <div class="relative w-28 h-28 mx-auto" :class="{ 'intense-blink': adrenalineElapsed >= 220 }">
                 <svg class="transform -rotate-90 w-28 h-28">
-                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="6" fill="transparent"
+                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
                           stroke="currentColor"/>
                   <circle
                       cx="56"
                       cy="56"
                       r="50"
                       class="text-red-500"
-                      stroke-width="6"
+                      stroke-width="10"
                       fill="transparent"
                       stroke="currentColor"
                       stroke-dasharray="314"
@@ -181,7 +196,7 @@
         </div>
 
         <!-- 3r terç: registre -->
-        <div ref="logContainer" class="w-1/3 bg-gray-50 rounded-lg shadow-inner p-3 overflow-y-auto">
+        <div ref="logContainer" class="w-1/4 bg-gray-50 rounded-lg shadow-inner p-2 overflow-y-auto">
           <div v-if="loading" class="text-center mt-6">
             <ion-spinner name="crescent"></ion-spinner>
           </div>
@@ -225,13 +240,13 @@
 </template>
 
 <script setup>
-import {IonContent, IonHeader, IonIcon, IonPage, IonTitle, IonToolbar} from '@ionic/vue'
+import {IonButton, IonContent, IonHeader, IonIcon, IonPage, IonTitle, IonToolbar} from '@ionic/vue'
 import echo from '../echo'
 import {computed, nextTick, onMounted, onUnmounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import api from "../axios"
 import { IonModal } from "@ionic/vue";
-import {flash, informationCircleOutline} from "ionicons/icons"
+import {arrowBackOutline, flash, informationCircleOutline} from "ionicons/icons"
 
 const route = useRoute()
 const router = useRouter()
@@ -243,6 +258,7 @@ const logContainer = ref(null)
 const sessionNumber = ref('--')
 const currentCycle = ref(null)
 const showInfo = ref(false)
+const showConciliateAlert = ref(false)
 
 const sessionElapsed = ref(0)
 const cycleElapsed = ref(0)
@@ -281,6 +297,15 @@ function parseTimestamp(val) {
     return Number.isFinite(ms) ? ms : null
   }
   return null
+}
+
+function handlePatientName(inputs) {
+  showConciliateAlert.value = false
+  const name = inputs.patientName
+  if (name) {
+    alert(`Pacient introduït: ${name}`)
+    // funció de conciliació
+  }
 }
 
 function firstValidTimestamp(...candidates) {

@@ -2,7 +2,13 @@
   <IonPage>
     <IonContent class="bg-gray-100 p-6">
       <div class="flex flex-col items-center justify-center h-full">
-        <!-- Botó iniciar aturada -->
+        <img
+            src="/src/assets/logo-hospital-trueta.svg"
+            alt="Logo Trueta"
+            class="w-56 mb-10"
+        />
+
+        <!-- 🔹 Botó iniciar aturada -->
         <IonButton
             expand="block"
             fill="clear"
@@ -12,6 +18,7 @@
           Iniciar Aturada
         </IonButton>
 
+        <!-- 🔹 Botó llista d'aturades -->
         <IonButton
             expand="block"
             fill="clear"
@@ -20,7 +27,6 @@
         >
           Llista d'aturades actives
         </IonButton>
-
       </div>
     </IonContent>
   </IonPage>

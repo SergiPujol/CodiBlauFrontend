@@ -2,16 +2,25 @@
   <ion-page>
     <ion-header>
       <ion-toolbar color="primary">
-        <ion-buttons slot="start" v-if="!selectedRhythm">
-          <ion-button @click="goHome">
-            Inici
+        <!-- Botó enrere -->
+        <ion-buttons slot="start">
+          <ion-button fill="clear" color="light" @click="$router.back()">
+            <ion-icon :icon="arrowBackOutline" slot="icon-only" />
+          </ion-button>
+          <!-- Botó menú -->
+          <ion-button fill="clear" color="light" @click="openMenuPopover($event)">
+            <ion-icon :icon="menuOutline" slot="icon-only" />
           </ion-button>
         </ion-buttons>
-        <ion-title>Codi Blau</ion-title>
+
+        <!-- Logo centrat -->
+        <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <img src="/src/assets/logo-hospital-trueta.svg" alt="Logo Trueta" class="h-8 w-auto" />
+        </div>
+
+        <!-- Botó sortir -->
         <ion-buttons slot="end" v-if="sessionId">
-          <ion-button color="danger" @click="confirmDeleteSession">
-            Sortir
-          </ion-button>
+          <ion-button @click="confirmDeleteSession">Sortir</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -35,14 +44,14 @@
               <circle
                   cx="56" cy="56" r="50"
                   class="text-gray-300"
-                  stroke-width="6"
+                  stroke-width="10"
                   fill="transparent"
                   stroke="currentColor"
               />
               <circle
                   cx="56" cy="56" r="50"
                   class="text-blue-500"
-                  stroke-width="6"
+                  stroke-width="10"
                   fill="transparent"
                   stroke="currentColor"
                   stroke-dasharray="314"
@@ -62,12 +71,12 @@
           <div class="relative w-28 h-28 mx-auto"
                :class="{ 'intense-blink': cycleElapsedSeconds >= 100 }">
             <svg class="transform -rotate-90 w-28 h-28">
-              <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="6" fill="transparent"
+              <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
                       stroke="currentColor"/>
               <circle
                   cx="56" cy="56" r="50"
                   class="text-green-500"
-                  stroke-width="6"
+                  stroke-width="10"
                   fill="transparent"
                   stroke="currentColor"
                   stroke-dasharray="314"
@@ -89,12 +98,12 @@
                :class="{ 'intense-blink': isAdrenalineExpired }"
           >
             <svg class="transform -rotate-90 w-28 h-28">
-              <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="6" fill="transparent"
+              <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
                       stroke="currentColor"/>
               <circle
                   cx="56" cy="56" r="50"
                   class="text-red-500"
-                  stroke-width="6"
+                  stroke-width="10"
                   fill="transparent"
                   stroke="currentColor"
                   stroke-dasharray="314"
@@ -160,24 +169,21 @@
             expand="block"
             v-for="rhythm in ['FV','TV SP']"
             :key="rhythm"
-            class="h-12 font-bold shadow-sm"
-            :fill="selectedRhythm === rhythm ? 'solid' : 'outline'"
-            style="--background: #3b82f6; --color: white"
+            class="font-bold shadow-md border-2"
+            style="--background: #dbeafe; --color: #3b82f6; --border-color: #3b82f6;"
             @click="handleRhythm(rhythm)"
-            :disabled="!canChangeRhythm"
         >
           {{ rhythm }}
         </ion-button>
+
 
         <ion-button
             expand="block"
             v-for="rhythm in ['AESP','Asistòlia']"
             :key="rhythm"
-            class="h-12 font-bold shadow-sm"
-            :fill="selectedRhythm === rhythm ? 'solid' : 'outline'"
-            style="--background: #ef4444; --color: white"
+            class="font-bold shadow-md border-2"
+            style="--background: rgba(251,105,111,0.73); --color: #b30519; --border-color: rgba(239,68,68,0.82);"
             @click="handleRhythm(rhythm)"
-            :disabled="!canChangeRhythm"
         >
           {{ rhythm }}
         </ion-button>
@@ -186,7 +192,7 @@
         <ion-button
             expand="block"
             :fill="selectedRhythm === 'ROSC' ? 'solid' : 'outline'"
-            style="--background: #22c55e; --color: white"
+            style="--background: #22c55e; --color: white; --border-color: rgb(0,143,0);"
             class="h-12 font-bold shadow-sm"
             @click="handleRhythm('ROSC')"
         >
@@ -200,11 +206,11 @@
         <!-- Adrenalina -->
         <ion-button
             expand="block"
-            fill="solid"
+            fill="outline"
             color="custom"
             @click="sendAction('adrenaline')"
             :disabled="!canUseAdrenaline || !canUseAnyAction"
-            :class="{ 'rhythm-highlight': ['AESP', 'Asistòlia'].includes(selectedRhythm) }"
+            :class="{ 'rhythm-highlight-not-shockable': ['AESP', 'Asistòlia'].includes(selectedRhythm) }"
         >
           Adrenalina
         </ion-button>
@@ -212,33 +218,49 @@
         <!-- Descàrrega -->
         <ion-button
             expand="block"
-            fill="solid"
+            fill="outline"
             color="custom"
             @click="sendAction('shock')"
             :disabled="!canUseShock || !canUseAnyAction"
-            :class="{ 'rhythm-highlight': ['FV', 'TV SP'].includes(selectedRhythm) }"
+            :class="{ 'rhythm-highlight-shockable': ['FV', 'TV SP'].includes(selectedRhythm) }"
         >
           <ion-icon slot="icon-only" :icon="flash"></ion-icon>
         </ion-button>
 
         <!-- Amiodarona -->
-        <ion-button expand="block" @click="selectAmiodarone" color="custom" :disabled="!canUseAnyAction"
+        <ion-button
+            expand="block"
+            fill="outline"
+            color="custom"
+            @click="selectAmiodarone"
+            :disabled="!canUseAnyAction"
         >
           Amiodarona
         </ion-button>
 
         <!-- Altres medicacions -->
-        <ion-button expand="block" @click="enterOtherMedication" color="custom" :disabled="!canUseAnyAction"
+        <ion-button
+            expand="block"
+            fill="outline"
+            color="custom"
+            @click="enterOtherMedication"
+            :disabled="!canUseAnyAction"
         >
           Altres medicacions
         </ion-button>
 
         <!-- Esdeveniments -->
-        <ion-button expand="block" @click="selectEvent" color="custom" :disabled="!canUseAnyAction"
+        <ion-button
+            expand="block"
+            fill="outline"
+            color="custom"
+            @click="selectEvent"
+            :disabled="!canUseAnyAction"
         >
           Esdeveniments
         </ion-button>
       </div>
+
       <!-- 🔹 Botons especials -->
       <div v-if="sessionId" class="grid grid-cols-2 gap-4 mt-6">
         <ion-button expand="block" fill="outline"
@@ -268,14 +290,16 @@ import {
   IonContent,
   IonButton,
   IonIcon,
-  alertController, actionSheetController
+  alertController, actionSheetController,
+    popoverController
 } from '@ionic/vue'
 import {ref, computed, onUnmounted, onMounted} from 'vue'
 import api from '../axios'
 import 'ionicons'
 import {onBeforeRouteLeave, useRouter} from "vue-router";
-import {flash} from 'ionicons/icons'
+import {arrowBackOutline, menuOutline, flash} from 'ionicons/icons'
 import {jsPDF} from "jspdf";
+import MenuPopover from "../components/MenuPopover.vue";
 
 const router = useRouter()
 const sessionId = ref(null)
@@ -297,11 +321,33 @@ const cycleStartTime = ref(null)
 const cycleElapsedSeconds = ref(0)
 let cycleIntervalId = null
 
+const openMenu = ref(false)
+const menuEvent = ref(null)
+
 const formattedAdrenalineTime = computed(() => {
   const minutes = Math.floor(adrenalineTime.value / 60).toString().padStart(2, '0')
   const seconds = (adrenalineTime.value % 60).toString().padStart(2, '0')
   return `${minutes}:${seconds}`
 })
+
+const openMenuPopover = async (e) => {
+  const popover = await popoverController.create({
+    event: e,
+    component: MenuPopover,
+    translucent: true
+  })
+  await popover.present()
+}
+
+const showAlgorithm = () => {
+  console.log('Mostrar algorismes')
+  openMenu.value = false
+}
+
+const showInfo = () => {
+  console.log('Mostrar informació')
+  openMenu.value = false
+}
 
 const canUseAdrenaline = computed(() => ['AESP', 'Asistòlia'].includes(selectedRhythm.value))
 const canUseShock = computed(() => ['FV', 'TV SP'].includes(selectedRhythm.value))
@@ -313,9 +359,9 @@ const hasROSC = ref(false)
 const isShockable = computed(() => ['FV', 'TV SP'].includes(selectedRhythm.value))
 
 const backgroundColor = computed(() => {
-  if (selectedRhythm.value === 'ROSC' || hasROSC.value) return '#7be69a'
-  if (isShockable.value) return '#dbeafe'
-  if (selectedRhythm.value) return '#fee2e2'
+  if (selectedRhythm.value === 'ROSC' || hasROSC.value) return '#9ff2b6'
+  if (isShockable.value) return '#dcebff'
+  if (selectedRhythm.value) return '#ffc7c7'
   return 'white'
 })
 
@@ -876,13 +922,19 @@ const sendOtherMedication = () => {
   }
 }
 
-.rhythm-highlight {
-  animation: glow 1s ease-in-out infinite alternate;
+.rhythm-highlight-shockable {
+  animation: glow-shockable 1s ease-in-out infinite alternate;
   background-color: #60a5fa;
   color: #000;
 }
 
-@keyframes glow {
+.rhythm-highlight-not-shockable {
+  animation: glow-not-shockable 1s ease-in-out infinite alternate;
+  background-color: rgba(251, 105, 111, 0.73);
+  color: #000;
+}
+
+@keyframes glow-shockable {
   from {
     box-shadow: 0 0 5px #60a5fa, 0 0 10px #60a5fa;
   }
@@ -891,7 +943,28 @@ const sendOtherMedication = () => {
   }
 }
 
-.rosc-background {
-  background-color: #4ade80; /* verd tailwind-500 */
+@keyframes glow-not-shockable {
+  from {
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.82), 0 0 10px #ef4444;
+  }
+  to {
+    box-shadow: 0 0 15px #e01c1c, 0 0 25px #ff2222;
+  }
 }
+
+.rosc-background {
+  background-color: #4ade80;
+}
+
+ion-button[fill="outline"][color="custom"]::part(native) {
+  border-color: #4b5563;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 500;
+}
+
+ion-button[fill="outline"][color="custom"]::part(native):hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 </style>
