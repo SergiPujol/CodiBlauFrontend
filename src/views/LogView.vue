@@ -1,9 +1,9 @@
 <template>
   <ion-page>
     <ion-header>
-      <ion-toolbar color="primary">
+      <ion-toolbar :style="{ '--background': headerColor }">
         <ion-buttons slot="start">
-          <ion-button fill="clear" color="light" @click="$router.back()">
+          <ion-button fill="clear" color="black" @click="$router.back()">
             <ion-icon :icon="arrowBackOutline" slot="icon-only"></ion-icon>
           </ion-button>
         </ion-buttons>
@@ -22,13 +22,11 @@
     <ion-alert
         :is-open="showConciliateAlert"
         header="Introdueix el pacient"
-        :inputs="[
-      { name: 'patientName', type: 'text', placeholder: 'Nom del pacient' }
-    ]"
+        :inputs="[{ name: 'patientName', type: 'text', placeholder: 'Nom del pacient' }]"
         :buttons="[
-      { text: 'Cancel·lar', role: 'cancel', handler: () => showConciliateAlert = false },
-      { text: 'Acceptar', handler: handlePatientName }
-    ]"
+        { text: 'Cancel·lar', role: 'cancel', handler: () => showConciliateAlert = false },
+        { text: 'Acceptar', handler: handlePatientName }
+      ]"
     />
 
     <ion-modal :is-open="showInfo" @didDismiss="showInfo = false">
@@ -39,52 +37,73 @@
       >
         <img
             :src="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)
-        ? '/images/alritme%20desfibril·Lable.jpg'
-        : '/images/algoritme%20no%20desfibril·lable.jpg'"
+            ? '/images/alritme%20desfibril·Lable.jpg'
+            : '/images/algoritme%20no%20desfibril·lable.jpg'"
             alt="Algoritme"
             class="w-full h-full object-contain"
         />
       </ion-content>
     </ion-modal>
 
-    <ion-content class="p-4" :style="{'--background': backgroundColor}">
+    <ion-content class="p-4">
       <div
           v-if="sessionEnded"
           class="w-full bg-red-100 text-red-800 text-center font-bold py-2 border-b border-red-300"
       >
         ⚠️ La sessió ha finalitzat
       </div>
-      <div class="flex w-full h-full">
-        <!-- 1r terç: imatge del ritme -->
-        <div class="w-1/3 pr-4 flex items-center justify-center">
-          <img
-              :src="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)
-              ? '/images/alritme%20desfibril·Lable.jpg'
-              : '/images/algoritme%20no%20desfibril·lable.jpg'"
-              :alt="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)
-              ? 'Algoritme desfibril·lable'
-              : 'Algoritme no desfibril·lable'"
-              class="w-full h-auto rounded"
-          />
+
+      <!-- Contenidor principal -->
+      <div class="flex h-[calc(100vh-56px)] w-full gap-4">
+        <!-- 1r terç: llista de cicles -->
+        <div class="flex justify-center">
+          <div class="w-80 h-full flex flex-col bg-gray-50 rounded-lg shadow-inner p-4 overflow-y-auto">
+            <ul class="space-y-2 text-sm">
+              <li
+                  v-for="action in cycleLog"
+                  :key="action.id"
+                  class="p-2 rounded shadow-sm font-bold"
+                  :class="action.isCycle
+    ? (isShockable(action.cycle_rhythm_type)
+        ? 'bg-blue-200 text-blue-900'
+        : 'bg-red-200 text-red-900')
+    : typeColors[action.type] || 'bg-white'"
+              >
+                <p>
+                  {{ typeTranslations[action.type] || action.type }}
+                  <span class="text-xs text-gray-600 ml-2">⏱️ {{ formatTime(action.executed_at) }}</span>
+                </p>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <!-- 2n terç: rellotges i botons -->
-        <div class="w-2/3 pr-4 flex flex-col justify-center">
-          <div class="mb-4 text-center">
-            <h2 class="text-xl font-bold">Sessió #{{ sessionNumber }}</h2>
+        <!-- 2n terç: rellotges i info -->
+        <div class="flex-1 flex flex-col items-center justify-center px-8 min-h-[450px] gap-y-6">
+          <!-- Ritme actual -->
+          <div class="text-center mt-5"> <!-- menys marge superior -->
+            <div
+                class="text-4xl font-bold"
+                :class="{
+        'text-blue-500': isShockable(currentCycle?.rhythm_type),
+        'text-red-500': !isShockable(currentCycle?.rhythm_type)
+      }"
+            >
+              {{ currentCycle?.rhythm_type }}
+            </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-4 text-center mb-6">
+          <!-- Rellotges -->
+          <div class="grid grid-cols-3 gap-x-16 gap-y-8 justify-items-center text-center mx-auto">
             <!-- Sessió -->
-            <div>
-              <h3 class="font-bold text-lg">Sessió</h3>
-              <div class="relative w-28 h-28 mx-auto">
-                <svg class="transform -rotate-90 w-28 h-28">
-                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
-                          stroke="currentColor"/>
+            <div class="flex flex-col items-center">
+              <h3 class="font-bold text-lg mb-4">Sessió</h3>
+              <div class="relative w-40 h-40 scale-[1.4]">
+                <svg class="transform -rotate-90 w-40 h-40">
+                  <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor" />
                   <circle
-                      cx="56"
-                      cy="56"
+                      cx="78"
+                      cy="78"
                       r="50"
                       class="text-blue-500"
                       stroke-width="10"
@@ -95,22 +114,21 @@
                       stroke-linecap="round"
                   />
                 </svg>
-                <div class="absolute inset-0 flex items-center justify-center font-mono">
+                <div class="absolute inset-0 flex items-center justify-center font-mono text-lg">
                   {{ formattedSessionTime }}
                 </div>
               </div>
             </div>
 
             <!-- Cicle -->
-            <div>
-              <h3 class="font-bold text-lg">Cicle</h3>
-              <div class="relative w-28 h-28 mx-auto" :class="{ 'intense-blink': cycleElapsed >= 100 }">
-                <svg class="transform -rotate-90 w-28 h-28">
-                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
-                          stroke="currentColor"/>
+            <div class="flex flex-col items-center">
+              <h3 class="font-bold text-lg mb-4">Cicle</h3>
+              <div class="relative w-40 h-40 scale-[1.4]" :class="{ 'intense-blink': cycleElapsed >= 100 }">
+                <svg class="transform -rotate-90 w-40 h-40">
+                  <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor" />
                   <circle
-                      cx="56"
-                      cy="56"
+                      cx="78"
+                      cy="78"
                       r="50"
                       class="text-green-500"
                       stroke-width="10"
@@ -121,22 +139,21 @@
                       stroke-linecap="round"
                   />
                 </svg>
-                <div class="absolute inset-0 flex items-center justify-center font-mono">
+                <div class="absolute inset-0 flex items-center justify-center font-mono text-lg">
                   {{ formattedCycleTime }}
                 </div>
               </div>
             </div>
 
             <!-- Adrenalina -->
-            <div>
-              <h3 class="font-bold text-lg">Adrenalina</h3>
-              <div class="relative w-28 h-28 mx-auto" :class="{ 'intense-blink': adrenalineElapsed >= 220 }">
-                <svg class="transform -rotate-90 w-28 h-28">
-                  <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
-                          stroke="currentColor"/>
+            <div class="flex flex-col items-center">
+              <h3 class="font-bold text-lg mb-4">Adrenalina</h3>
+              <div class="relative w-40 h-40 scale-[1.4]" :class="{ 'intense-blink': adrenalineElapsed >= 220 }">
+                <svg class="transform -rotate-90 w-40 h-40">
+                  <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor" />
                   <circle
-                      cx="56"
-                      cy="56"
+                      cx="78"
+                      cy="78"
                       r="50"
                       class="text-red-500"
                       stroke-width="10"
@@ -147,7 +164,7 @@
                       stroke-linecap="round"
                   />
                 </svg>
-                <div class="absolute inset-0 flex items-center justify-center font-mono">
+                <div class="absolute inset-0 flex items-center justify-center font-mono text-lg">
                   {{ formattedAdrenalineTime }}
                 </div>
               </div>
@@ -155,48 +172,20 @@
           </div>
 
           <!-- Info cicle -->
-          <div class="my-6 text-center">
-            <div class="text-4xl font-bold ">
-              {{ currentCycle?.rhythm_type }}
-            </div>
-            <div class="text-sm text-gray-500 mt-6">
-              Cicle actual: {{ currentCycle?.number }}
-            </div>
+          <div class="mb-4 text-center">
+            <div class="text-sm mt-4 text-gray-500">Cicle actual: {{ currentCycle?.number }}</div>
+            <div class="text-sm mt-4 text-gray-500">Sessió #{{ sessionNumber }}</div>
+            <img
+                v-if="sessionNumber"
+                src="/src/assets/logo-hospital-trueta.svg"
+                alt="Logo Trueta"
+                class="mx-auto mt-4 h-8 w-auto opacity-80"
+            />
           </div>
-
-
-          <!--          &lt;!&ndash; Botons de ritme (només visuals) &ndash;&gt;-->
-          <!--          <div class="grid grid-cols-5 gap-2 mb-6">-->
-          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">FV-->
-          <!--            </ion-button>-->
-          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">TV-->
-          <!--              SP-->
-          <!--            </ion-button>-->
-          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">-->
-          <!--              AESP-->
-          <!--            </ion-button>-->
-          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">-->
-          <!--              Asistòlia-->
-          <!--            </ion-button>-->
-          <!--            <ion-button expand="block" fill="outline" color="medium" class="text-black font-bold hover:bg-gray-100">-->
-          <!--              ROSC-->
-          <!--            </ion-button>-->
-          <!--          </div>-->
-
-          <!--          &lt;!&ndash; Botons d'accions (només visuals) &ndash;&gt;-->
-          <!--          <div class="grid grid-cols-5 gap-2 mb-6">-->
-          <!--            <ion-button expand="block" fill="solid" color="custom">Adrenalina</ion-button>-->
-          <!--            <ion-button expand="block" fill="solid" color="custom">-->
-          <!--              <ion-icon slot="icon-only" :icon="flash"></ion-icon>-->
-          <!--            </ion-button>-->
-          <!--            <ion-button expand="block" fill="solid" color="custom">Amiodarona</ion-button>-->
-          <!--            <ion-button expand="block" fill="solid" color="custom">Altres medicacions</ion-button>-->
-          <!--            <ion-button expand="block" fill="solid" color="custom">Esdeveniments</ion-button>-->
-          <!--          </div>-->
         </div>
 
         <!-- 3r terç: registre -->
-        <div ref="logContainer" class="w-1/4 bg-gray-50 rounded-lg shadow-inner p-2 overflow-y-auto">
+        <div ref="logContainer" class="w-80 bg-gray-50 rounded-lg shadow-inner p-4 overflow-y-auto">
           <div v-if="loading" class="text-center mt-6">
             <ion-spinner name="crescent"></ion-spinner>
           </div>
@@ -209,28 +198,28 @@
             <li
                 v-for="action in actions"
                 :key="action.id"
-                class="p-2 rounded shadow-sm"
+                class="p-2 rounded shadow-sm font-bold"
                 :class="action.isCycle
-    ? 'bg-blue-200 font-bold text-blue-900'
-    : typeColors[action.type] || 'bg-white'">
-
+    ? (isShockable(action.cycle_rhythm_type)
+        ? 'bg-blue-200 text-blue-900'
+        : 'bg-red-200 text-red-900')
+    : typeColors[action.type] || 'bg-white'"
+            >
               <p v-if="action.isCycle">
                 {{ action.type }}
-                <!-- afegim hora del cicle -->
                 <span class="text-xs text-gray-600 ml-2">⏱️ {{ formatTime(action.executed_at) }}</span>
               </p>
 
               <template v-else>
                 <p class="font-semibold">
                   {{ typeTranslations[action.type] || action.type }}
-                  <span v-if="action.value" class="ml-1 text-gray-700">
-        ({{ action.value }})
-      </span>
+                  <span v-if="action.value" class="ml-1 text-gray-700">({{ action.value }})</span>
                 </p>
                 <p class="text-xs text-gray-600">⏱️ {{ formatTime(action.executed_at) }}</p>
                 <p class="text-xs text-gray-500">Cicle: {{ action.cycle_number }}</p>
               </template>
             </li>
+
 
           </ul>
         </div>
@@ -270,12 +259,12 @@ const ADRENALINE_EXPIRE_SECONDS = 240
 
 const sessionEnded = ref(false)
 
-const backgroundColor = computed(() => {
+const headerColor = computed(() => {
   const mapping = {
-    'FV': '#bfdbfe',       // blau clar
-    'TV SP': '#bfdbfe',
-    'Asistòlia': '#fecaca', // vermell clar
-    'AESP': '#fecaca',
+    'FV': '#dbeafe',       // blau clar
+    'TV SP': '#dbeafe',
+    'Asistòlia': 'rgba(251,105,111,0.73)', // vermell clar
+    'AESP': 'rgba(251,105,111,0.73)',
     'ROSC': '#bbf7d0',     // verd clar
   }
   return mapping[currentCycle.value?.rhythm_type] || 'white'
@@ -297,6 +286,13 @@ function parseTimestamp(val) {
     return Number.isFinite(ms) ? ms : null
   }
   return null
+}
+
+const shockableRhythms = ['FV', 'TV SP']
+
+const isShockable = (rhythm) => {
+  if (!rhythm) return false
+  return shockableRhythms.some(r => rhythm.toLowerCase().includes(r.toLowerCase()))
 }
 
 function handlePatientName(inputs) {
@@ -415,21 +411,32 @@ const typeTranslations = {
 }
 
 const typeColors = {
-  adrenaline: 'bg-red-100 text-red-800',
+  adrenaline: 'bg-orange-100 text-orange-800',
   'amiodarone 300': 'bg-purple-100 text-purple-800',
   'amiodarone 150': 'bg-purple-100 text-purple-800',
   defibrillation: 'bg-yellow-100 text-yellow-800',
-  rosc: 'bg-green-100 text-green-800',
   shock: 'bg-yellow-100 text-yellow-800',
-  other_medication: 'bg-gray-100 text-gray-800',
-  event: 'bg-blue-100 text-blue-800',
-  iv: 'bg-pink-100 text-pink-800',
-  io: 'bg-pink-100 text-pink-800',
-  iot: 'bg-pink-100 text-pink-800',
-  supraglottic: 'bg-pink-100 text-pink-800',
+  rosc: 'bg-teal-100 text-teal-800',
+  other_medication: 'bg-gray-100 text-gray-700',
+  event: 'bg-sky-100 text-sky-800',
+  iv: 'bg-cyan-100 text-cyan-800',
+  io: 'bg-cyan-100 text-cyan-800',
+  iot: 'bg-cyan-100 text-cyan-800',
+  supraglottic: 'bg-cyan-100 text-cyan-800',
   cardiocompressor: 'bg-indigo-100 text-indigo-800',
   capnograph: 'bg-indigo-100 text-indigo-800'
 }
+
+const cycleLog = computed(() => {
+  return actions.value
+      .filter(a =>
+          a.isCycle ||
+          ['adrenaline', 'shock'].includes((a.type || '').toLowerCase()) ||
+          (a.type || '').toLowerCase().includes('adrenalina')
+      )
+      .sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
+})
+
 
 const rhythmColors = {
   'FV': 'bg-blue-200',
@@ -527,7 +534,8 @@ onMounted(async () => {
       executed_at: new Date(c.start_time).toISOString(),
       session_id: c.session_id,
       cycle_number: c.number,
-      isCycle: true
+      isCycle: true,
+      cycle_rhythm_type: c.rhythm_type
     }))
 
     actions.value = [...oldActions, ...cycleActions].sort(
@@ -691,7 +699,8 @@ onMounted(async () => {
       executed_at: executed_at_iso,
       session_id: event.session_id,
       cycle_number: event.number,
-      isCycle: true
+      isCycle: true,
+      cycle_rhythm_type: event.rhythm_type
     })
 
     currentCycle.value = {number: event.number, rhythm_type: event.rhythm_type}

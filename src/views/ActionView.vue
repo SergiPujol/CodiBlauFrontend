@@ -1,22 +1,30 @@
 <template>
   <ion-page>
     <ion-header>
-      <ion-toolbar color="primary">
+      <ion-toolbar :style="{ '--background': headerColor }">
         <!-- Botó enrere -->
         <ion-buttons slot="start">
-          <ion-button fill="clear" color="light" @click="$router.back()">
+          <ion-button fill="clear" color="black" @click="$router.back()">
             <ion-icon :icon="arrowBackOutline" slot="icon-only" />
           </ion-button>
           <!-- Botó menú -->
-          <ion-button fill="clear" color="light" @click="openMenuPopover($event)">
+          <ion-button fill="clear" color="black" @click="openMenuPopover($event)">
             <ion-icon :icon="menuOutline" slot="icon-only" />
           </ion-button>
         </ion-buttons>
 
-        <!-- Logo centrat -->
+        <!-- Logo i text centrat -->
         <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <img src="/src/assets/logo-hospital-trueta.svg" alt="Logo Trueta" class="h-8 w-auto" />
+          <template v-if="!sessionId">
+            <img src="/src/assets/logo-hospital-trueta.svg" alt="Logo Trueta" class="h-8 w-auto" />
+          </template>
+          <template v-else>
+            <p class="text-2xl font-bold tracking-wide text-gray-700">
+              Codi Blau
+            </p>
+          </template>
         </div>
+
 
         <!-- Botó sortir -->
         <ion-buttons slot="end" v-if="sessionId">
@@ -25,31 +33,27 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content
-        class="pt-4 pb-4 px-6 space-y-6"
-        :class="{ 'rosc-background': hasROSC }"
-        :style="{ '--background': backgroundColor }"
-    >
+    <ion-content class="pt-4 pb-4 px-6 space-y-6" :class="{ 'rosc-background': hasROSC }">
 
-      <h2 v-if="sessionId" class="text-2xl font-bold text-center">
-        Sessió #{{ sessionId }}
+      <!-- Ritme seleccionat -->
+      <h2
+          v-if="selectedRhythm"
+          class="text-center !font-bold !text-4xl"
+          :class="isShockable ? 'text-blue-500' : 'text-red-500'"
+      >
+        {{ selectedRhythm }}
       </h2>
+
       <!-- 🔹 Rellotges -->
       <div v-if="sessionId" class="grid grid-cols-3 gap-4 text-center">
         <!-- Sessió -->
         <div>
           <h3 class="font-bold text-lg">Sessió</h3>
-          <div class="relative w-28 h-28 mx-auto">
-            <svg class="transform -rotate-90 w-28 h-28">
+          <div class="relative w-40 h-40 scale-[1.4] mx-auto">
+            <svg class="transform -rotate-90 w-40 h-40">
+              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor" />
               <circle
-                  cx="56" cy="56" r="50"
-                  class="text-gray-300"
-                  stroke-width="10"
-                  fill="transparent"
-                  stroke="currentColor"
-              />
-              <circle
-                  cx="56" cy="56" r="50"
+                  cx="78" cy="78" r="50"
                   class="text-blue-500"
                   stroke-width="10"
                   fill="transparent"
@@ -59,7 +63,7 @@
                   stroke-linecap="round"
               />
             </svg>
-            <div class="absolute inset-0 flex items-center justify-center font-mono">
+            <div class="absolute inset-0 flex items-center justify-center font-mono text-lg">
               {{ formattedTime }}
             </div>
           </div>
@@ -68,13 +72,11 @@
         <!-- Cicle -->
         <div>
           <h3 class="font-bold text-lg">Cicle</h3>
-          <div class="relative w-28 h-28 mx-auto"
-               :class="{ 'intense-blink': cycleElapsedSeconds >= 100 }">
-            <svg class="transform -rotate-90 w-28 h-28">
-              <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
-                      stroke="currentColor"/>
+          <div class="relative w-40 h-40 scale-[1.4] mx-auto" :class="{ 'intense-blink': cycleElapsedSeconds >= 100 }">
+            <svg class="transform -rotate-90 w-40 h-40">
+              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor"/>
               <circle
-                  cx="56" cy="56" r="50"
+                  cx="78" cy="78" r="50"
                   class="text-green-500"
                   stroke-width="10"
                   fill="transparent"
@@ -82,10 +84,9 @@
                   stroke-dasharray="314"
                   :stroke-dashoffset="314 - (cycleElapsedSeconds / 120) * 314"
                   stroke-linecap="round"
-
               />
             </svg>
-            <div class="absolute inset-0 flex items-center justify-center font-mono">
+            <div class="absolute inset-0 flex items-center justify-center font-mono text-lg">
               {{ formattedCycleTime }}
             </div>
           </div>
@@ -94,14 +95,11 @@
         <!-- Adrenalina -->
         <div>
           <h3 class="font-bold text-lg">Adrenalina</h3>
-          <div class="relative w-28 h-28 mx-auto"
-               :class="{ 'intense-blink': isAdrenalineExpired }"
-          >
-            <svg class="transform -rotate-90 w-28 h-28">
-              <circle cx="56" cy="56" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
-                      stroke="currentColor"/>
+          <div class="relative w-40 h-40 scale-[1.4] mx-auto" :class="{ 'intense-blink': isAdrenalineExpired }">
+            <svg class="transform -rotate-90 w-40 h-40">
+              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor"/>
               <circle
-                  cx="56" cy="56" r="50"
+                  cx="78" cy="78" r="50"
                   class="text-red-500"
                   stroke-width="10"
                   fill="transparent"
@@ -111,17 +109,14 @@
                   stroke-linecap="round"
               />
             </svg>
-            <div class="absolute inset-0 flex items-center justify-center font-mono">
+            <div class="absolute inset-0 flex items-center justify-center font-mono text-lg">
               {{ formattedAdrenalineTime }}
             </div>
           </div>
         </div>
+
       </div>
 
-      <!-- 🔹 Info cicle -->
-      <div v-if="selectedRhythm" class="text-center text-lg font-bold text-purple-600">
-        {{ selectedRhythm }}
-      </div>
       <div v-if="cycleNumber" class="text-center text-sm text-gray-500">
         Cicle actual: {{ cycleNumber }}
       </div>
@@ -163,118 +158,104 @@
         </div>
       </div>
 
-      <!-- Un cop seleccionat: barra horitzontal -->
-      <div v-else class="grid grid-cols-5 gap-2">
+      <!-- Un cop seleccionat: barra horitzontal sense ROSC -->
+      <div v-else class="grid grid-cols-4 gap-2">
         <ion-button
             expand="block"
             v-for="rhythm in ['FV','TV SP']"
             :key="rhythm"
-            class="font-bold shadow-md border-2"
-            style="--background: #dbeafe; --color: #3b82f6; --border-color: #3b82f6;"
+            class="font-bold shadow-md border-2 rounded-lg"
+            style="--background: #dbeafe; --color: #3b82f6; --border-color: #3b82f6; --border-radius: 0.5rem;"
             @click="handleRhythm(rhythm)"
         >
           {{ rhythm }}
         </ion-button>
-
 
         <ion-button
             expand="block"
             v-for="rhythm in ['AESP','Asistòlia']"
             :key="rhythm"
-            class="font-bold shadow-md border-2"
-            style="--background: rgba(251,105,111,0.73); --color: #b30519; --border-color: rgba(239,68,68,0.82);"
+            class="font-bold shadow-md border-2 rounded-lg"
+            style="--background: rgba(251,105,111,0.73); --color: #b30519; --border-color: rgba(239,68,68,0.82); --border-radius: 0.5rem;"
             @click="handleRhythm(rhythm)"
         >
           {{ rhythm }}
         </ion-button>
+      </div>
 
-        <!-- Botó ROSC -->
+      <!-- 🔹 Botons d'accions -->
+      <div v-if="sessionId" class="grid grid-cols-5 gap-2 mb-4">
+        <ion-button expand="block" fill="outline" class="btn-adrenaline" @click="sendAction('adrenaline')">
+          Adrenalina
+        </ion-button>
+
+        <ion-button expand="block" fill="outline" class="btn-shock" @click="sendAction('shock')">
+          <ion-icon slot="icon-only" :icon="flash" />
+        </ion-button>
+
+        <ion-button expand="block" fill="outline" class="btn-amiodarone" @click="selectAmiodarone">
+          Amiodarona
+        </ion-button>
+
+        <ion-button expand="block" fill="outline" class="btn-other" @click="enterOtherMedication">
+          Altres medicacions
+        </ion-button>
+
+        <ion-button expand="block" fill="outline" class="btn-event" @click="selectEvent">
+          Esdeveniments
+        </ion-button>
+
+      </div>
+
+      <!-- 🔹 Botons especials -->
+      <div v-if="sessionId" class="grid grid-cols-2 gap-4 mb-4">
         <ion-button
             expand="block"
-            :fill="selectedRhythm === 'ROSC' ? 'solid' : 'outline'"
-            style="--background: #22c55e; --color: white; --border-color: rgb(0,143,0);"
-            class="h-12 font-bold shadow-sm"
+            fill="outline"
+            color="medium"
+            class="text-black font-bold hover:bg-gray-100"
+            @click="confirmStopSession('exitus')"
+        >
+          Èxitus
+        </ion-button>
+
+        <!-- ROSC substitueix Tèrminus -->
+        <ion-button
+            expand="block"
+            fill="outline"
+            color="success"
+            class="font-bold text-white"
             @click="handleRhythm('ROSC')"
         >
           ROSC
         </ion-button>
       </div>
 
-
-      <!-- 🔹 Botons d'accions -->
-      <div v-if="sessionId" class="grid grid-cols-5 gap-2">
-        <!-- Adrenalina -->
+      <!-- Botó Finalitzar sessió -->
+      <div v-if="sessionId" class="mt-4">
         <ion-button
             expand="block"
             fill="outline"
-            color="custom"
-            @click="sendAction('adrenaline')"
-            :disabled="!canUseAdrenaline || !canUseAnyAction"
-            :class="{ 'rhythm-highlight-not-shockable': ['AESP', 'Asistòlia'].includes(selectedRhythm) }"
+            color="danger"
+            class="font-bold"
+            @click="confirmStopSession('finish')"
         >
-          Adrenalina
-        </ion-button>
-
-        <!-- Descàrrega -->
-        <ion-button
-            expand="block"
-            fill="outline"
-            color="custom"
-            @click="sendAction('shock')"
-            :disabled="!canUseShock || !canUseAnyAction"
-            :class="{ 'rhythm-highlight-shockable': ['FV', 'TV SP'].includes(selectedRhythm) }"
-        >
-          <ion-icon slot="icon-only" :icon="flash"></ion-icon>
-        </ion-button>
-
-        <!-- Amiodarona -->
-        <ion-button
-            expand="block"
-            fill="outline"
-            color="custom"
-            @click="selectAmiodarone"
-            :disabled="!canUseAnyAction"
-        >
-          Amiodarona
-        </ion-button>
-
-        <!-- Altres medicacions -->
-        <ion-button
-            expand="block"
-            fill="outline"
-            color="custom"
-            @click="enterOtherMedication"
-            :disabled="!canUseAnyAction"
-        >
-          Altres medicacions
-        </ion-button>
-
-        <!-- Esdeveniments -->
-        <ion-button
-            expand="block"
-            fill="outline"
-            color="custom"
-            @click="selectEvent"
-            :disabled="!canUseAnyAction"
-        >
-          Esdeveniments
+          Finalitzar sessió
         </ion-button>
       </div>
 
-      <!-- 🔹 Botons especials -->
-      <div v-if="sessionId" class="grid grid-cols-2 gap-4 mt-6">
-        <ion-button expand="block" fill="outline"
-                    color="medium" class="text-black font-bold hover:bg-gray-100"
-                    @click="confirmStopSession('exitus')">
-          Èxitus
-        </ion-button>
-        <ion-button expand="block" fill="outline"
-                    color="medium" class="text-black font-bold hover:bg-gray-100"
-                    @click="confirmStopSession('terminus')"
-                    :disabled="selectedRhythm.value === 'ROSC'">
-          Tèrminus
-        </ion-button>
-      </div>
+      <h4
+          v-if="sessionId"
+          class="absolute bottom-4 right-4 text-sm font-bold text-gray-700"
+      >
+        Sessió #{{ sessionId }}
+      </h4>
+      <img
+          v-if="sessionId"
+          src="/src/assets/logo-hospital-trueta.svg"
+          alt="Logo Trueta"
+          class="absolute bottom-6 left-6 h-6 w-auto opacity-80"
+      />
 
     </ion-content>
   </ion-page>
@@ -349,7 +330,7 @@ const showInfo = () => {
   openMenu.value = false
 }
 
-const canUseAdrenaline = computed(() => ['AESP', 'Asistòlia'].includes(selectedRhythm.value))
+const canUseAdrenaline = computed(() => ['FV', 'TV SP','AESP', 'Asistòlia'].includes(selectedRhythm.value))
 const canUseShock = computed(() => ['FV', 'TV SP'].includes(selectedRhythm.value))
 const canUseAnyAction = computed(() => selectedRhythm.value !== 'ROSC')
 const canChangeRhythm = computed(() => selectedRhythm.value !== 'ROSC')
@@ -358,10 +339,10 @@ const hasROSC = ref(false)
 
 const isShockable = computed(() => ['FV', 'TV SP'].includes(selectedRhythm.value))
 
-const backgroundColor = computed(() => {
+const headerColor = computed(() => {
   if (selectedRhythm.value === 'ROSC' || hasROSC.value) return '#9ff2b6'
-  if (isShockable.value) return '#dcebff'
-  if (selectedRhythm.value) return '#ffc7c7'
+  if (isShockable.value) return '#dbeafe'
+  if (selectedRhythm.value) return 'rgba(251,105,111,0.73)'
   return 'white'
 })
 
@@ -965,6 +946,32 @@ ion-button[fill="outline"][color="custom"]::part(native) {
 
 ion-button[fill="outline"][color="custom"]::part(native):hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* A ActionView.vue o al teu style global */
+.btn-adrenaline {
+  --border-color: #f97316 !important;  /* taronja */
+  --color: #c2410c !important;
+}
+
+.btn-shock {
+  --border-color: #facc15 !important;  /* groc */
+  --color: #b45309 !important;
+}
+
+.btn-amiodarone {
+  --border-color: #d8b4fe !important;  /* morat */
+  --color: #6b21a8 !important;
+}
+
+.btn-other {
+  --border-color: #e5e7eb !important;  /* gris */
+  --color: #374151 !important;
+}
+
+.btn-event {
+  --border-color: #22d3ee !important;  /* cian */
+  --color: #0e7490 !important;
 }
 
 </style>

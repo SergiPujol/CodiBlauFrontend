@@ -6,8 +6,20 @@
           <ion-button fill="clear" color="light" @click="$router.back()">
             <ion-icon :icon="arrowBackOutline" slot="icon-only"></ion-icon>
           </ion-button>
+
+          <div class="flex items-center gap-2 ml-2">
+            <span class="text-white font-semibold text-lg">Sessions</span>
+            <ion-button
+                fill="clear"
+                color="light"
+                size="small"
+                class="p-0 flex items-center justify-center"
+                @click="loadSessions"
+            >
+              <ion-icon :icon="refreshOutline"></ion-icon>
+            </ion-button>
+          </div>
         </ion-buttons>
-        <ion-title>Sessions</ion-title>
 
         <ion-buttons slot="start">
           <ion-button @click="showFilter = true">
@@ -15,6 +27,8 @@
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
+
+
       <!-- Barra de filtres activa -->
       <div v-if="hasActiveFilters" class="filters-bar">
         <template v-if="currentFilter !== 'all'">
@@ -137,7 +151,7 @@ import {
 import {ref, onMounted, computed} from "vue"
 import api from "../axios"
 import {useRouter} from "vue-router"
-import {optionsOutline, closeCircleOutline, arrowBackOutline} from "ionicons/icons"
+import {optionsOutline, closeCircleOutline, arrowBackOutline, refreshOutline} from "ionicons/icons"
 
 const router = useRouter()
 const sessions = ref([])

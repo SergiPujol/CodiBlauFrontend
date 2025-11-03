@@ -25,7 +25,7 @@
             class="w-64 py-4 text-lg font-semibold rounded-2xl shadow bg-blue-500 hover:bg-blue-600 text-white"
             @click="$router.push({ name: 'SessionList' })"
         >
-          Llista d'aturades actives
+          Llista d'aturades
         </IonButton>
       </div>
     </IonContent>
