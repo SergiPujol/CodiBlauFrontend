@@ -527,7 +527,15 @@ const startSessionWithRhythm = async (rhythm) => {
   if (!sessionId.value) {
     try {
       const now = new Date()
-      const start_time = now.toISOString().slice(0,19).replace('T',' ')
+      sessionStartTime.value = now // ✅ correcte, sense pèrdua de zona horària
+
+      const start_time = now.getFullYear() + '-' +
+          String(now.getMonth() + 1).padStart(2,'0') + '-' +
+          String(now.getDate()).padStart(2,'0') + ' ' +
+          String(now.getHours()).padStart(2,'0') + ':' +
+          String(now.getMinutes()).padStart(2,'0') + ':' +
+          String(now.getSeconds()).padStart(2,'0')
+
 
       const res = await api.post('/sessions', {
         rhythm_type: rhythm,
