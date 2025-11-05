@@ -1,5 +1,13 @@
 <template>
   <ion-page>
+    <!-- Pantalla carregant ritme inicial -->
+    <div
+        v-if="isInitialRhythmLoading"
+        class="fixed inset-0 bg-white flex justify-center items-center z-50"
+    >
+      <ion-spinner name="crescent" class="scale-150"></ion-spinner>
+    </div>
+
     <ion-header>
       <ion-toolbar :style="{ '--background': headerColor }">
         <!-- Botó enrere -->
@@ -95,7 +103,7 @@
         <!-- Adrenalina -->
         <div>
           <h3 class="font-bold text-lg">Adrenalina</h3>
-          <div class="relative w-40 h-40 scale-[1.4] mx-auto" :class="{ 'intense-blink': isAdrenalineExpired }">
+          <div class="relative w-40 h-40 scale-[1.4] mx-auto" :class="{ 'intense-blink': adrenalineBlink }">
             <svg class="transform -rotate-90 w-40 h-40">
               <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor"/>
               <circle
@@ -166,42 +174,86 @@
             :key="rhythm"
             class="font-bold shadow-md border-2 rounded-lg"
             style="--background: #dbeafe; --color: #3b82f6; --border-color: #3b82f6; --border-radius: 0.5rem;"
-            @click="handleRhythm(rhythm)"
+            @click="preventDoubleClick('shockableRhythm', () => handleRhythm(rhythm))"
         >
-          {{ rhythm }}
+          <template v-if="changingRhythm === rhythm">
+            <ion-spinner name="crescent"></ion-spinner>
+          </template>
+          <template v-else>
+            {{ rhythm }}
+          </template>
+          <template v-else>
+            {{ rhythm }}
+          </template>
         </ion-button>
-
         <ion-button
             expand="block"
             v-for="rhythm in ['AESP','Asistòlia']"
             :key="rhythm"
             class="font-bold shadow-md border-2 rounded-lg"
             style="--background: rgba(251,105,111,0.73); --color: #b30519; --border-color: rgba(239,68,68,0.82); --border-radius: 0.5rem;"
-            @click="handleRhythm(rhythm)"
+            @click="preventDoubleClick('notShockableRhythm', () => handleRhythm(rhythm))"
         >
-          {{ rhythm }}
+          <template v-if="changingRhythm === rhythm">
+            <ion-spinner name="crescent"></ion-spinner>
+          </template>
+          <template v-else>
+            {{ rhythm }}
+          </template>
+          <template v-else>
+            {{ rhythm }}
+          </template>
         </ion-button>
       </div>
 
       <!-- 🔹 Botons d'accions -->
       <div v-if="sessionId" class="grid grid-cols-5 gap-2 mb-4">
-        <ion-button expand="block" fill="outline" class="btn-adrenaline" @click="sendAction('adrenaline')">
+
+        <ion-button
+            expand="block"
+            fill="outline"
+            class="btn-adrenaline"
+            :class="{'intense-blink': adrenalineBlink}"
+            @click="preventDoubleClick('adrenaline', () => sendAction('adrenaline'))"
+        >
           Adrenalina
         </ion-button>
 
-        <ion-button expand="block" fill="outline" class="btn-shock" @click="sendAction('shock')">
+        <ion-button
+            expand="block"
+            fill="outline"
+            class="btn-shock"
+            :class="{'intense-blink': shockBlink}"
+            @click="preventDoubleClick('shock', () => sendAction('shock'))"
+        >
           <ion-icon slot="icon-only" :icon="flash" />
         </ion-button>
 
-        <ion-button expand="block" fill="outline" class="btn-amiodarone" @click="selectAmiodarone">
+        <ion-button
+            expand="block"
+            fill="outline"
+            class="btn-amiodarone"
+            :class="{'intense-blink': amiodaroneBlink}"
+            @click="preventDoubleClick('amiodarone', () => selectAmiodarone())"
+        >
           Amiodarona
         </ion-button>
 
-        <ion-button expand="block" fill="outline" class="btn-other" @click="enterOtherMedication">
+        <ion-button
+            expand="block"
+            fill="outline"
+            class="btn-other"
+            @click="preventDoubleClick('other', () => enterOtherMedication())"
+        >
           Altres medicacions
         </ion-button>
 
-        <ion-button expand="block" fill="outline" class="btn-event" @click="selectEvent">
+        <ion-button
+            expand="block"
+            fill="outline"
+            class="btn-event"
+            @click="preventDoubleClick('event', () => selectEvent())"
+        >
           Esdeveniments
         </ion-button>
 
@@ -214,18 +266,17 @@
             fill="outline"
             color="medium"
             class="text-black font-bold hover:bg-gray-100"
-            @click="confirmStopSession('exitus')"
+            @click="preventDoubleClick('exitus', () => confirmStopSession('exitus'))"
         >
           Èxitus
         </ion-button>
 
-        <!-- ROSC substitueix Tèrminus -->
         <ion-button
             expand="block"
             fill="outline"
             color="success"
             class="font-bold text-white"
-            @click="handleRhythm('ROSC')"
+            @click="preventDoubleClick('rosc', () => handleRhythm('ROSC'))"
         >
           ROSC
         </ion-button>
@@ -238,7 +289,7 @@
             fill="outline"
             color="danger"
             class="font-bold"
-            @click="confirmStopSession('finish')"
+            @click="preventDoubleClick('finish', () => confirmStopSession('finish'))"
         >
           Finalitzar sessió
         </ion-button>
@@ -289,13 +340,11 @@ const cycleNumber = ref(null)
 const selectedRhythm = ref(null)
 const sessionStartTime = ref(null)
 const elapsedSeconds = ref(0)
-const rhythms = ["FV", "TV SP", "AESP", "Asistòlia"]
 let intervalId = null
 
 // Temporitzador d’adrenalina
 const adrenalineTime = ref(0)
 const adrenalineInterval = ref(null)
-const isAdrenalineExpired = computed(() => adrenalineTime.value >= 220)
 
 //Temporitzador de cicle
 const cycleStartTime = ref(null)
@@ -303,7 +352,15 @@ const cycleElapsedSeconds = ref(0)
 let cycleIntervalId = null
 
 const openMenu = ref(false)
-const menuEvent = ref(null)
+
+const shockableCycleCount = ref(0)
+const totalCycleCount = ref(0)
+
+const lastAdrenalineCycle = ref(0)
+const lastAmiodaroneCycle = ref(0)
+const shockDoneThisCycle = ref(false)
+
+const isInitialRhythmLoading = ref(false)
 
 const formattedAdrenalineTime = computed(() => {
   const minutes = Math.floor(adrenalineTime.value / 60).toString().padStart(2, '0')
@@ -330,10 +387,7 @@ const showInfo = () => {
   openMenu.value = false
 }
 
-const canUseAdrenaline = computed(() => ['FV', 'TV SP','AESP', 'Asistòlia'].includes(selectedRhythm.value))
-const canUseShock = computed(() => ['FV', 'TV SP'].includes(selectedRhythm.value))
-const canUseAnyAction = computed(() => selectedRhythm.value !== 'ROSC')
-const canChangeRhythm = computed(() => selectedRhythm.value !== 'ROSC')
+const changingRhythm = ref(null)
 
 const hasROSC = ref(false)
 
@@ -369,10 +423,25 @@ const startAdrenalineTimer = () => {
   if (adrenalineInterval.value) clearInterval(adrenalineInterval.value)
   adrenalineInterval.value = setInterval(() => {
     adrenalineTime.value++
-    if (adrenalineTime.value >= 240) {
-      clearInterval(adrenalineInterval.value)
-    }
   }, 1000)
+}
+
+const lastClicked = ref({
+  name: null,
+  timestamp: 0
+})
+
+const preventDoubleClick = (actionName, callback) => {
+  const now = Date.now()
+
+  if (lastClicked.value.name === actionName && (now - lastClicked.value.timestamp < 1200)) {
+    console.log("Clic repetit evitat:", actionName)
+    return
+  }
+
+  lastClicked.value = { name: actionName, timestamp: now }
+
+  callback()
 }
 
 // El rellotge es posa a 0 quan comença un nou cicle
@@ -397,37 +466,46 @@ const formattedCycleTime = computed(() => {
 })
 
 const handleRhythm = async (rhythm) => {
-  if (rhythm === 'ROSC') {
-    hasROSC.value = true
-    selectedRhythm.value = 'ROSC'
+  // ✅ CAS 1: PRIMERA SELECCIÓ DE RITME (no hi ha sessió iniciada)
+  if (!selectedRhythm.value) {
+    if (isInitialRhythmLoading.value) return
+    isInitialRhythmLoading.value = true
 
-    // 🔹 Aturar rellotges
-    pauseAllTimers()
-
-    // 🔹 Guardar acció ROSC
-    await sendAction('rosc')
-
-    // 🔹 Tancar la sessió amb end_time
-    if (sessionId.value) {
-      try {
-        const now = new Date()
-        const end_time = now.toISOString().slice(0, 19).replace('T', ' ')
-
-        await api.put(`/sessions/${sessionId.value}`, {
-          end_time: end_time
-        })
-
-        console.log("🟢 ROSC registrat: sessió finalitzada i rellotges aturats")
-      } catch (err) {
-        console.error("Error tancant sessió amb ROSC:", err)
+    try {
+      if (rhythm === 'ROSC') {
+        hasROSC.value = true
+        selectedRhythm.value = 'ROSC'
+        pauseAllTimers()
+        await sendAction('rosc')
+        return
       }
+
+      await startSessionWithRhythm(rhythm)
+    } finally {
+      isInitialRhythmLoading.value = false
     }
-  } else {
-    // 🔹 Flux normal: crear sessió o nou cicle
+
+    return
+  }
+
+  // ✅ CAS 2: CANVI DE RITME DURANT LA SESSIÓ
+  if (changingRhythm.value) return
+
+  changingRhythm.value = rhythm
+  try {
+    if (rhythm === 'ROSC') {
+      hasROSC.value = true
+      selectedRhythm.value = 'ROSC'
+      pauseAllTimers()
+      await sendAction('rosc')
+      return
+    }
+
     await startSessionWithRhythm(rhythm)
+  } finally {
+    changingRhythm.value = null
   }
 }
-
 const pauseAllTimers = () => {
   if (intervalId) clearInterval(intervalId)
   if (cycleIntervalId) clearInterval(cycleIntervalId)
@@ -440,72 +518,113 @@ const startSessionWithRhythm = async (rhythm) => {
     await sendAction('rosc')
     selectedRhythm.value = 'ROSC'
     hasROSC.value = true
-    console.log("🟢 ROSC detectat → rellotges aturats")
+    console.log("ROSC detectat → rellotges aturats")
     return
   }
 
-  // Reiniciem ROSC a l'iniciar nova sessió
   hasROSC.value = false
 
   if (!sessionId.value) {
     try {
-      const now = new Date();
-      const start_time = now.getFullYear() + '-' +
-          String(now.getMonth() + 1).padStart(2, '0') + '-' +
-          String(now.getDate()).padStart(2, '0') + ' ' +
-          String(now.getHours()).padStart(2, '0') + ':' +
-          String(now.getMinutes()).padStart(2, '0') + ':' +
-          String(now.getSeconds()).padStart(2, '0');
+      const now = new Date()
+      const start_time = now.toISOString().slice(0,19).replace('T',' ')
 
       const res = await api.post('/sessions', {
         rhythm_type: rhythm,
-        start_time: start_time
-      });
+        start_time
+      })
 
-      sessionId.value = res.data.id;
-      cycleId.value = res.data.cycle_id;
-      cycleNumber.value = 1;
-      selectedRhythm.value = rhythm;
+      sessionId.value = res.data.id
+      cycleId.value = res.data.cycle_id
+      cycleNumber.value = res.data.number || 1
+      selectedRhythm.value = rhythm
+      shockDoneThisCycle.value = false
 
-      // Reiniciem rellotges
-      sessionStartTime.value = new Date(res.data.start_time.replace(' ', 'T'));
-      elapsedSeconds.value = 0;
-      if (intervalId) clearInterval(intervalId);
+      totalCycleCount.value = 1
+
+      shockableCycleCount.value = ['FV', 'TV SP'].includes(rhythm) ? 1 : 0
+
+      // Reiniciar rellotges
+      sessionStartTime.value = new Date(start_time.replace(' ', 'T'))
+      elapsedSeconds.value = 0
+      if (intervalId) clearInterval(intervalId)
       intervalId = setInterval(() => {
-        const now = new Date();
-        elapsedSeconds.value = Math.floor((now - sessionStartTime.value) / 1000);
-      }, 1000);
+        const now = new Date()
+        elapsedSeconds.value = Math.floor((now - sessionStartTime.value) / 1000)
+      }, 1000)
 
-      startCycleTimer();
-      adrenalineTime.value = 0;
-      if (adrenalineInterval.value) clearInterval(adrenalineInterval.value);
-      adrenalineInterval.value = null;
+      startCycleTimer()
+      adrenalineTime.value = 0
+      if (adrenalineInterval.value) clearInterval(adrenalineInterval.value)
+      adrenalineInterval.value = null
 
-      console.log('Sessió creada amb ritme:', rhythm);
+      console.log('Sessió creada amb ritme:', rhythm)
+
     } catch (error) {
-      console.error('Error creant sessió:', error);
+      console.error('Error creant sessió:', error)
     }
+
   } else {
-    // Crear nou cicle dins la sessió existent
     try {
       const res = await api.post(`/sessions/${sessionId.value}/cycles`, {
         rhythm_type: rhythm
-      });
-      cycleId.value = res.data.id;
-      cycleNumber.value = res.data.number;
-      selectedRhythm.value = rhythm;
+      })
 
-      // Reiniciar cicle
-      startCycleTimer();
+      cycleId.value = res.data.id
+      cycleNumber.value = res.data.number || (totalCycleCount.value + 1)
+      totalCycleCount.value++
 
-      console.log('Nou cicle creat amb ritme:', rhythm);
+      if (['FV', 'TV SP'].includes(rhythm)) {
+        shockableCycleCount.value++
+        shockDoneThisCycle.value = false;
+      } else shockDoneThisCycle.value = true;
+
+      selectedRhythm.value = rhythm
+
+      startCycleTimer()
+
+      console.log('Nou cicle creat amb ritme:', rhythm)
+
     } catch (error) {
-      console.error('Error creant cicle:', error);
+      console.error('Error creant cicle:', error)
     }
   }
-};
+}
 
+const adrenalineBlink = computed(() => {
+  if (!sessionId.value) return false
 
+  if (!isShockable.value) {
+    // No desfibril·lable: adrenalina cada 4 minuts
+    return adrenalineTime.value >= 240
+  } else {
+    // Desfibril·lable: parpelleja després del 3r i 5è cicle desfibril·lable
+    if ([3, 5].includes(shockableCycleCount.value)) {
+      return lastAdrenalineCycle.value < shockableCycleCount.value
+    }
+    // Posteriorment, cada 4 minuts (2 cicles)
+    if (shockableCycleCount.value > 5) {
+      const shouldBlink = (shockableCycleCount.value - 5) % 2 === 0
+      return shouldBlink && lastAdrenalineCycle.value < shockableCycleCount.value
+    }
+  }
+  return false
+})
+
+const amiodaroneBlink = computed(() => {
+  if (!sessionId.value || !isShockable.value) return false
+
+  // Només als cicles shockables 3 i 5
+  if ([3, 5].includes(shockableCycleCount.value)) {
+    return lastAmiodaroneCycle.value < shockableCycleCount.value
+  }
+
+  return false
+})
+
+const shockBlink = computed(() => {
+  return isShockable.value && !shockDoneThisCycle.value
+})
 const sendAction = async (type, value = null) => {
   if (!sessionId.value || !cycleId.value) return
   const now = new Date()
@@ -515,7 +634,17 @@ const sendAction = async (type, value = null) => {
   try {
     const res = await api.post(`/sessions/${sessionId.value}/actions`, data)
     console.log("Acció enviada:", res.data)
-    if (type === 'adrenaline') startAdrenalineTimer()
+    if (type === 'adrenaline') {
+      lastAdrenalineCycle.value = shockableCycleCount.value
+      startAdrenalineTimer()
+      adrenalineTime.value = 0
+    }
+    if (type === 'amiodarone 300' || type === 'amiodarone 150') {
+      lastAmiodaroneCycle.value = shockableCycleCount.value
+    }
+    if (type === 'shock'){
+      shockDoneThisCycle.value = true
+    }
   } catch (e) {
     console.error(e)
   }
@@ -526,9 +655,9 @@ const selectAmiodarone = async () => {
   const actionSheet = await actionSheetController.create({
     header: 'Selecciona dosi',
     buttons: [
-      {text: '300mg', handler: () => sendAction('amiodarone 300')},
-      {text: '150mg', handler: () => sendAction('amiodarone 150')},
-      {text: 'Cancel·lar', role: 'cancel'}
+      { text: '300mg', handler: () => preventDoubleClick('amiodarone 300', () => sendAction('amiodarone 300')) },
+      { text: '150mg', handler: () => preventDoubleClick('amiodarone 150', () => sendAction('amiodarone 150')) },
+      { text: 'Cancel·lar', role: 'cancel' }
     ]
   })
   await actionSheet.present()
@@ -538,12 +667,13 @@ const selectAmiodarone = async () => {
 const enterOtherMedication = async () => {
   const alert = await alertController.create({
     header: 'Altres medicacions',
-    inputs: [{name: 'med', type: 'text', placeholder: 'Introdueix una medicació'}],
+    inputs: [{ name: 'med', type: 'text', placeholder: 'Introdueix una medicació' }],
     buttons: [
-      {text: 'Cancel·lar', role: 'cancel'},
+      { text: 'Cancel·lar', role: 'cancel' },
       {
-        text: 'Enviar', handler: (data) => {
-          if (data.med) sendAction(data.med)
+        text: 'Enviar',
+        handler: (data) => {
+          if (data.med) preventDoubleClick('other', () => sendAction(data.med))
         }
       }
     ]
@@ -556,13 +686,13 @@ const selectEvent = async () => {
   const actionSheet = await actionSheetController.create({
     header: 'Selecciona un esdeveniment',
     buttons: [
-      {text: 'Accés IV', handler: () => sendAction('iv')},
-      {text: 'Accés IO', handler: () => sendAction('io')},
-      {text: 'IOT', handler: () => sendAction('iot')},
-      {text: 'Accés supraglòtic', handler: () => sendAction('supraglottic')},
-      {text: 'Cardiocompressor', handler: () => sendAction('cardiocompressor')},
-      {text: 'Capnògraf', handler: () => sendAction('capnograph')},
-      {text: 'Cancel·lar', role: 'cancel'}
+      { text: 'Accés IV', handler: () => preventDoubleClick('iv', () => sendAction('iv')) },
+      { text: 'Accés IO', handler: () => preventDoubleClick('io', () => sendAction('io')) },
+      { text: 'IOT', handler: () => preventDoubleClick('iot', () => sendAction('iot')) },
+      { text: 'Accés supraglòtic', handler: () => preventDoubleClick('sg', () => sendAction('supraglottic')) },
+      { text: 'Cardiocompressor', handler: () => preventDoubleClick('comp', () => sendAction('cardiocompressor')) },
+      { text: 'Capnògraf', handler: () => preventDoubleClick('capno', () => sendAction('capnograph')) },
+      { text: 'Cancel·lar', role: 'cancel' }
     ]
   })
   await actionSheet.present()
@@ -578,7 +708,7 @@ const stopSession = async () => {
   if (!sessionId.value) return
 
   try {
-    if (!hasROSC.value) { // 👈 Només actualitza end_time si no hi ha ROSC
+    if (!hasROSC.value) {
       const now = new Date()
       const end_time = now.toISOString().slice(0, 19).replace('T', ' ')
 
@@ -591,19 +721,16 @@ const stopSession = async () => {
       console.log('Sessió ja finalitzada amb ROSC, no s’actualitza end_time')
     }
 
-    // 🔹 Netejar intervals
     if (intervalId) clearInterval(intervalId)
     if (adrenalineInterval.value) clearInterval(adrenalineInterval.value)
     if (cycleIntervalId) clearInterval(cycleIntervalId)
 
-    // 🔹 Reset variables
     sessionId.value = null
     cycleId.value = null
     cycleNumber.value = null
     selectedRhythm.value = null
-    hasROSC.value = false // 👈 Reset
+    hasROSC.value = false
 
-    // 🔹 Tornar a Home
     router.push({name: 'Home'})
   } catch (error) {
     console.error('Error finalitzant sessió:', error)
@@ -899,7 +1026,7 @@ const sendOtherMedication = () => {
   }
   50%, 100% {
     opacity: 0.2;
-    transform: scale(1.15);
+    transform: scale(1.05);
   }
 }
 
@@ -948,29 +1075,28 @@ ion-button[fill="outline"][color="custom"]::part(native):hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* A ActionView.vue o al teu style global */
 .btn-adrenaline {
-  --border-color: #f97316 !important;  /* taronja */
+  --border-color: #f97316 !important;
   --color: #c2410c !important;
 }
 
 .btn-shock {
-  --border-color: #facc15 !important;  /* groc */
+  --border-color: #facc15 !important;
   --color: #b45309 !important;
 }
 
 .btn-amiodarone {
-  --border-color: #d8b4fe !important;  /* morat */
+  --border-color: #d8b4fe !important;
   --color: #6b21a8 !important;
 }
 
 .btn-other {
-  --border-color: #e5e7eb !important;  /* gris */
+  --border-color: #7d8083 !important;
   --color: #374151 !important;
 }
 
 .btn-event {
-  --border-color: #22d3ee !important;  /* cian */
+  --border-color: #22d3ee !important;
   --color: #0e7490 !important;
 }
 
