@@ -9,9 +9,6 @@
         </ion-buttons>
         <ion-title>Registre de la Sessió</ion-title>
         <ion-buttons slot="end" class="mr-3">
-          <ion-button fill="solid" color="light" @click="showInfo = true">
-            <ion-icon :icon="informationCircleOutline" slot="icon-only"></ion-icon>
-          </ion-button>
           <ion-button v-if="sessionEnded" fill="solid" color="primary" @click="showConciliateAlert = true">
             Conciliar
           </ion-button>
@@ -28,22 +25,6 @@
         { text: 'Acceptar', handler: handlePatientName }
       ]"
     />
-
-    <ion-modal :is-open="showInfo" @didDismiss="showInfo = false">
-      <ion-content
-          fullscreen
-          class="flex items-center justify-center bg-black"
-          :style="{ padding: 0, overflow: 'hidden' }"
-      >
-        <img
-            :src="['FV', 'TV SP'].includes(currentCycle?.rhythm_type)
-            ? '/images/alritme%20desfibril·Lable.jpg'
-            : '/images/algoritme%20no%20desfibril·lable.jpg'"
-            alt="Algoritme"
-            class="w-full h-full object-contain"
-        />
-      </ion-content>
-    </ion-modal>
 
     <ion-content class="p-4">
       <div
@@ -246,7 +227,6 @@ const loading = ref(true)
 const logContainer = ref(null)
 const sessionNumber = ref('--')
 const currentCycle = ref(null)
-const showInfo = ref(false)
 const showConciliateAlert = ref(false)
 
 const sessionElapsed = ref(0)
@@ -254,18 +234,17 @@ const cycleElapsed = ref(0)
 const adrenalineElapsed = ref(0)
 let sessionTimer = null, cycleTimer = null, adrenalineTimer = null
 
-const CYCLE_DEFAULT_SECONDS = 120
 const ADRENALINE_EXPIRE_SECONDS = 240
 
 const sessionEnded = ref(false)
 
 const headerColor = computed(() => {
   const mapping = {
-    'FV': '#dbeafe',       // blau clar
+    'FV': '#dbeafe',
     'TV SP': '#dbeafe',
-    'Asistòlia': 'rgba(251,105,111,0.73)', // vermell clar
+    'Asistòlia': 'rgba(251,105,111,0.73)',
     'AESP': 'rgba(251,105,111,0.73)',
-    'ROSC': '#bbf7d0',     // verd clar
+    'ROSC': '#bbf7d0',
   }
   return mapping[currentCycle.value?.rhythm_type] || 'white'
 })

@@ -7,22 +7,20 @@
             alt="Logo Trueta"
             class="w-56 mb-10"
         />
-
-        <!-- 🔹 Botó iniciar aturada -->
         <IonButton
             expand="block"
             fill="clear"
-            class="w-64 py-4 text-lg font-semibold rounded-2xl shadow mb-6 bg-red-500 hover:bg-red-600 text-white"
+            class="w-64 py-4 text-lg font-semibold rounded-2xl shadow mb-6
+         bg-gray-300 hover:bg-gray-400 text-gray-900 transition"
             @click="$router.push({ name: 'Actions' })"
         >
           Iniciar Aturada
         </IonButton>
-
-        <!-- 🔹 Botó llista d'aturades -->
         <IonButton
             expand="block"
             fill="clear"
-            class="w-64 py-4 text-lg font-semibold rounded-2xl shadow bg-blue-500 hover:bg-blue-600 text-white"
+            class="w-64 py-4 text-lg font-semibold rounded-2xl shadow
+         bg-gray-300 hover:bg-gray-400 text-gray-900 transition"
             @click="$router.push({ name: 'SessionList' })"
         >
           Llista d'aturades

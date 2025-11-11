@@ -1,6 +1,5 @@
 <template>
   <ion-page>
-    <!-- Pantalla carregant ritme inicial -->
     <div
         v-if="isInitialRhythmLoading"
         class="fixed inset-0 bg-white flex justify-center items-center z-50"
@@ -10,34 +9,31 @@
 
     <ion-header>
       <ion-toolbar :style="{ '--background': headerColor }">
-        <!-- Botó enrere -->
         <ion-buttons slot="start">
-          <ion-button fill="clear" color="black" @click="$router.back()">
-            <ion-icon :icon="arrowBackOutline" slot="icon-only" />
+          <ion-button v-if="!sessionId" fill="clear" color="black" @click="$router.back()">
+            <ion-icon :icon="arrowBackOutline" slot="icon-only"/>
           </ion-button>
-          <!-- Botó menú -->
+          <ion-button v-else fill="clear" color="black" @click="confirmDeleteSession">
+            <ion-icon :icon="arrowBackOutline" slot="icon-only"/>
+          </ion-button>
           <ion-button fill="clear" color="black" @click="openMenuPopover($event)">
-            <ion-icon :icon="menuOutline" slot="icon-only" />
+            <ion-icon :icon="menuOutline" slot="icon-only"/>
           </ion-button>
         </ion-buttons>
 
-        <!-- Logo i text centrat -->
         <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
           <template v-if="!sessionId">
-            <img src="/src/assets/logo-hospital-trueta.svg" alt="Logo Trueta" class="h-8 w-auto" />
+            <img src="/src/assets/logo-hospital-trueta.svg" alt="Logo Trueta" class="h-8 w-auto"/>
           </template>
           <template v-else>
-            <p class="text-2xl font-bold tracking-wide text-gray-700">
+            <p
+                class="text-2xl font-bold tracking-wide"
+                :style="{ color: isShockable ? '#374151' : '#930614' }"
+            >
               Codi Blau
             </p>
           </template>
         </div>
-
-
-        <!-- Botó sortir -->
-        <ion-buttons slot="end" v-if="sessionId">
-          <ion-button @click="confirmDeleteSession">Sortir</ion-button>
-        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
@@ -47,7 +43,7 @@
       <h2
           v-if="selectedRhythm"
           class="text-center !font-bold !text-4xl"
-          :class="isShockable ? 'text-blue-500' : 'text-red-500'"
+          :style="{ color: isShockable ? '#3b82f6' : '#b30519' }"
       >
         {{ selectedRhythm }}
       </h2>
@@ -59,7 +55,8 @@
           <h3 class="font-bold text-lg">Sessió</h3>
           <div class="relative w-40 h-40 scale-[1.4] mx-auto">
             <svg class="transform -rotate-90 w-40 h-40">
-              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor" />
+              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
+                      stroke="currentColor"/>
               <circle
                   cx="78" cy="78" r="50"
                   class="text-blue-500"
@@ -82,7 +79,8 @@
           <h3 class="font-bold text-lg">Cicle</h3>
           <div class="relative w-40 h-40 scale-[1.4] mx-auto" :class="{ 'intense-blink': cycleElapsedSeconds >= 100 }">
             <svg class="transform -rotate-90 w-40 h-40">
-              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor"/>
+              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
+                      stroke="currentColor"/>
               <circle
                   cx="78" cy="78" r="50"
                   class="text-green-500"
@@ -105,7 +103,8 @@
           <h3 class="font-bold text-lg">Adrenalina</h3>
           <div class="relative w-40 h-40 scale-[1.4] mx-auto" :class="{ 'intense-blink': adrenalineBlink }">
             <svg class="transform -rotate-90 w-40 h-40">
-              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent" stroke="currentColor"/>
+              <circle cx="78" cy="78" r="50" class="text-gray-300" stroke-width="10" fill="transparent"
+                      stroke="currentColor"/>
               <circle
                   cx="78" cy="78" r="50"
                   class="text-red-500"
@@ -166,7 +165,7 @@
         </div>
       </div>
 
-      <!-- Un cop seleccionat: barra horitzontal sense ROSC -->
+      <!-- Un cop seleccionat: barra horitzontal -->
       <div v-else class="grid grid-cols-4 gap-2">
         <ion-button
             expand="block"
@@ -224,9 +223,10 @@
             fill="outline"
             class="btn-shock"
             :class="{'intense-blink': shockBlink}"
-            @click="preventDoubleClick('shock', () => sendAction('shock'))"
+            :disabled="!isShockable"
+        @click="preventDoubleClick('shock', () => sendAction('shock'))"
         >
-          <ion-icon slot="icon-only" :icon="flash" />
+        <ion-icon slot="icon-only" :icon="flash"/>
         </ion-button>
 
         <ion-button
@@ -259,14 +259,13 @@
 
       </div>
 
-      <!-- 🔹 Botons especials -->
       <div v-if="sessionId" class="grid grid-cols-2 gap-4 mb-4">
         <ion-button
             expand="block"
             fill="outline"
             color="medium"
             class="text-black font-bold hover:bg-gray-100"
-            @click="preventDoubleClick('exitus', () => confirmStopSession('exitus'))"
+            @click="preventDoubleClick('exitus', handleExitus)"
         >
           Èxitus
         </ion-button>
@@ -276,22 +275,22 @@
             fill="outline"
             color="success"
             class="font-bold text-white"
-            @click="preventDoubleClick('rosc', () => handleRhythm('ROSC'))"
+            @click="preventDoubleClick('rosc', handleROSC)"
         >
           ROSC
         </ion-button>
       </div>
 
-      <!-- Botó Finalitzar sessió -->
       <div v-if="sessionId" class="mt-4">
         <ion-button
             expand="block"
-            fill="outline"
-            color="danger"
+            fill="solid"
             class="font-bold"
-            @click="preventDoubleClick('finish', () => confirmStopSession('finish'))"
+            style="--background: #e5e7eb; --color: #333d4b;"
+            :disabled="!hasROSC"
+        @click="preventDoubleClick('finish', handleFinishSession)"
         >
-          Finalitzar sessió
+        Finalitzar sessió
         </ion-button>
       </div>
 
@@ -323,7 +322,7 @@ import {
   IonButton,
   IonIcon,
   alertController, actionSheetController,
-    popoverController
+  popoverController
 } from '@ionic/vue'
 import {ref, computed, onUnmounted, onMounted} from 'vue'
 import api from '../axios'
@@ -361,6 +360,11 @@ const lastAmiodaroneCycle = ref(0)
 const shockDoneThisCycle = ref(false)
 
 const isInitialRhythmLoading = ref(false)
+
+const sessionFinishedEnabled = ref(false)
+const clocksPaused = ref(false)
+
+let elapsedBeforeROSC = 0
 
 const formattedAdrenalineTime = computed(() => {
   const minutes = Math.floor(adrenalineTime.value / 60).toString().padStart(2, '0')
@@ -439,7 +443,7 @@ const preventDoubleClick = (actionName, callback) => {
     return
   }
 
-  lastClicked.value = { name: actionName, timestamp: now }
+  lastClicked.value = {name: actionName, timestamp: now}
 
   callback()
 }
@@ -466,17 +470,23 @@ const formattedCycleTime = computed(() => {
 })
 
 const handleRhythm = async (rhythm) => {
-  // ✅ CAS 1: PRIMERA SELECCIÓ DE RITME (no hi ha sessió iniciada)
+  // Primera selecció de ritme
   if (!selectedRhythm.value) {
     if (isInitialRhythmLoading.value) return
     isInitialRhythmLoading.value = true
 
     try {
       if (rhythm === 'ROSC') {
-        hasROSC.value = true
-        selectedRhythm.value = 'ROSC'
         pauseAllTimers()
         await sendAction('rosc')
+
+        hasROSC.value = true
+        selectedRhythm.value = 'ROSC'
+
+        // Guardem el temps abans de ROSC per reprendre després
+        elapsedBeforeROSC = elapsedSeconds.value
+        console.log("ROSC detectat. Rellotges aturats a " + elapsedBeforeROSC + "s")
+
         return
       }
 
@@ -488,7 +498,7 @@ const handleRhythm = async (rhythm) => {
     return
   }
 
-  // ✅ CAS 2: CANVI DE RITME DURANT LA SESSIÓ
+  // Canvi de ritme
   if (changingRhythm.value) return
 
   changingRhythm.value = rhythm
@@ -498,6 +508,10 @@ const handleRhythm = async (rhythm) => {
       selectedRhythm.value = 'ROSC'
       pauseAllTimers()
       await sendAction('rosc')
+
+      // Guardem el temps abans de ROSC
+      elapsedBeforeROSC = elapsedSeconds.value
+      console.log("ROSC detectat. Rellotges aturats a " + elapsedBeforeROSC + "s")
       return
     }
 
@@ -513,29 +527,19 @@ const pauseAllTimers = () => {
 }
 
 const startSessionWithRhythm = async (rhythm) => {
-  if (rhythm === 'ROSC') {
-    pauseAllTimers()
-    await sendAction('rosc')
-    selectedRhythm.value = 'ROSC'
-    hasROSC.value = true
-    console.log("ROSC detectat → rellotges aturats")
-    return
-  }
-
   hasROSC.value = false
 
   if (!sessionId.value) {
     try {
       const now = new Date()
-      sessionStartTime.value = now // ✅ correcte, sense pèrdua de zona horària
+      sessionStartTime.value = now
 
       const start_time = now.getFullYear() + '-' +
-          String(now.getMonth() + 1).padStart(2,'0') + '-' +
-          String(now.getDate()).padStart(2,'0') + ' ' +
-          String(now.getHours()).padStart(2,'0') + ':' +
-          String(now.getMinutes()).padStart(2,'0') + ':' +
-          String(now.getSeconds()).padStart(2,'0')
-
+          String(now.getMonth() + 1).padStart(2, '0') + '-' +
+          String(now.getDate()).padStart(2, '0') + ' ' +
+          String(now.getHours()).padStart(2, '0') + ':' +
+          String(now.getMinutes()).padStart(2, '0') + ':' +
+          String(now.getSeconds()).padStart(2, '0')
 
       const res = await api.post('/sessions', {
         rhythm_type: rhythm,
@@ -547,9 +551,7 @@ const startSessionWithRhythm = async (rhythm) => {
       cycleNumber.value = res.data.number || 1
       selectedRhythm.value = rhythm
       shockDoneThisCycle.value = false
-
       totalCycleCount.value = 1
-
       shockableCycleCount.value = ['FV', 'TV SP'].includes(rhythm) ? 1 : 0
 
       // Reiniciar rellotges
@@ -567,7 +569,6 @@ const startSessionWithRhythm = async (rhythm) => {
       adrenalineInterval.value = null
 
       console.log('Sessió creada amb ritme:', rhythm)
-
     } catch (error) {
       console.error('Error creant sessió:', error)
     }
@@ -584,19 +585,49 @@ const startSessionWithRhythm = async (rhythm) => {
 
       if (['FV', 'TV SP'].includes(rhythm)) {
         shockableCycleCount.value++
-        shockDoneThisCycle.value = false;
-      } else shockDoneThisCycle.value = true;
+        shockDoneThisCycle.value = false
+      } else shockDoneThisCycle.value = true
 
       selectedRhythm.value = rhythm
+
+      if (hasROSC.value === false && elapsedBeforeROSC > 0) {
+        sessionStartTime.value = new Date(Date.now() - elapsedBeforeROSC * 1000)
+      }
+
+      if (intervalId) clearInterval(intervalId)
+      intervalId = setInterval(() => {
+        const now = new Date()
+        elapsedSeconds.value = Math.floor((now - sessionStartTime.value) / 1000)
+      }, 1000)
 
       startCycleTimer()
 
       console.log('Nou cicle creat amb ritme:', rhythm)
-
     } catch (error) {
       console.error('Error creant cicle:', error)
     }
   }
+}
+const handleExitus = async () => {
+  try {
+    await sendAction('exitus')
+    await confirmStopSession('exitus')
+  } catch (err) {
+    console.error("Error acabant sessió amb Èxitus:", err)
+  }
+}
+
+const handleROSC = async () => {
+  await sendAction('rosc')
+  hasROSC.value = true
+  pauseAllTimers()
+  clocksPaused.value = true
+  sessionFinishedEnabled.value = true
+}
+
+const handleFinishSession = async () => {
+  if (!sessionFinishedEnabled.value) return
+  confirmStopSession('finish')
 }
 
 const adrenalineBlink = computed(() => {
@@ -650,7 +681,7 @@ const sendAction = async (type, value = null) => {
     if (type === 'amiodarone 300' || type === 'amiodarone 150') {
       lastAmiodaroneCycle.value = shockableCycleCount.value
     }
-    if (type === 'shock'){
+    if (type === 'shock') {
       shockDoneThisCycle.value = true
     }
   } catch (e) {
@@ -663,9 +694,9 @@ const selectAmiodarone = async () => {
   const actionSheet = await actionSheetController.create({
     header: 'Selecciona dosi',
     buttons: [
-      { text: '300mg', handler: () => preventDoubleClick('amiodarone 300', () => sendAction('amiodarone 300')) },
-      { text: '150mg', handler: () => preventDoubleClick('amiodarone 150', () => sendAction('amiodarone 150')) },
-      { text: 'Cancel·lar', role: 'cancel' }
+      {text: '300mg', handler: () => preventDoubleClick('amiodarone 300', () => sendAction('amiodarone 300'))},
+      {text: '150mg', handler: () => preventDoubleClick('amiodarone 150', () => sendAction('amiodarone 150'))},
+      {text: 'Cancel·lar', role: 'cancel'}
     ]
   })
   await actionSheet.present()
@@ -675,9 +706,9 @@ const selectAmiodarone = async () => {
 const enterOtherMedication = async () => {
   const alert = await alertController.create({
     header: 'Altres medicacions',
-    inputs: [{ name: 'med', type: 'text', placeholder: 'Introdueix una medicació' }],
+    inputs: [{name: 'med', type: 'text', placeholder: 'Introdueix una medicació'}],
     buttons: [
-      { text: 'Cancel·lar', role: 'cancel' },
+      {text: 'Cancel·lar', role: 'cancel'},
       {
         text: 'Enviar',
         handler: (data) => {
@@ -694,13 +725,13 @@ const selectEvent = async () => {
   const actionSheet = await actionSheetController.create({
     header: 'Selecciona un esdeveniment',
     buttons: [
-      { text: 'Accés IV', handler: () => preventDoubleClick('iv', () => sendAction('iv')) },
-      { text: 'Accés IO', handler: () => preventDoubleClick('io', () => sendAction('io')) },
-      { text: 'IOT', handler: () => preventDoubleClick('iot', () => sendAction('iot')) },
-      { text: 'Accés supraglòtic', handler: () => preventDoubleClick('sg', () => sendAction('supraglottic')) },
-      { text: 'Cardiocompressor', handler: () => preventDoubleClick('comp', () => sendAction('cardiocompressor')) },
-      { text: 'Capnògraf', handler: () => preventDoubleClick('capno', () => sendAction('capnograph')) },
-      { text: 'Cancel·lar', role: 'cancel' }
+      {text: 'Accés IV', handler: () => preventDoubleClick('iv', () => sendAction('iv'))},
+      {text: 'Accés IO', handler: () => preventDoubleClick('io', () => sendAction('io'))},
+      {text: 'IOT', handler: () => preventDoubleClick('iot', () => sendAction('iot'))},
+      {text: 'Accés supraglòtic', handler: () => preventDoubleClick('sg', () => sendAction('supraglottic'))},
+      {text: 'Cardiocompressor', handler: () => preventDoubleClick('comp', () => sendAction('cardiocompressor'))},
+      {text: 'Capnògraf', handler: () => preventDoubleClick('capno', () => sendAction('capnograph'))},
+      {text: 'Cancel·lar', role: 'cancel'}
     ]
   })
   await actionSheet.present()
@@ -879,7 +910,8 @@ const generatePdfForSession = async () => {
       iot: 'IOT',
       supraglottic: 'Accés supraglòtic',
       cardiocompressor: 'Cardiocompressor',
-      capnograph: 'Capnògraf'
+      capnograph: 'Capnògraf',
+      exitus: "Èxitus"
     }
 
     const cycleTypeTranslations = {
@@ -889,7 +921,6 @@ const generatePdfForSession = async () => {
       unknown: 'Tipus desconegut'
     }
 
-    // Peticions al backend
     const [actionsRes, cyclesRes] = await Promise.all([
       api.get(`/sessions/${sessionId.value}/actions`),
       api.get(`/sessions/${sessionId.value}/cycles`)
@@ -906,7 +937,7 @@ const generatePdfForSession = async () => {
 
     actions.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
 
-    const doc = new jsPDF({ unit: "mm", format: "a4" })
+    const doc = new jsPDF({unit: "mm", format: "a4"})
     const marginLeft = 15
     let y = 20
 
@@ -923,7 +954,7 @@ const generatePdfForSession = async () => {
     doc.text("Cicles i Accions", marginLeft, y)
     y += 8
 
-    // Agrupem accions per número de cicle
+    // Agrupar accions per número de cicle
     const actionsByCycle = {}
     for (const a of actions) {
       const c = cycleMap[a.cycle_id]
@@ -943,13 +974,12 @@ const generatePdfForSession = async () => {
         y = 20
       }
 
-      // Ara busquem pel número correctament (convertint-lo a número si cal)
       const cycle = cycles.find(c => String(c.number) === String(cnum))
       const cycleType = cycle
           ? (cycleTypeTranslations[cycle.rhythm_type] || cycle.rhythm_type || 'Tipus desconegut')
           : 'Tipus desconegut'
 
-// Formatem hora d'inici si existeix
+// Formatar hora d'inici
       let startTimeStr = ''
       if (cycle?.start_time) {
         const date = new Date(cycle.start_time)
@@ -973,7 +1003,6 @@ const generatePdfForSession = async () => {
           y = 20
         }
 
-        // Format data DD/MM/YYYY HH:mm:ss
         let time = ''
         if (a.executed_at) {
           const date = new Date(a.executed_at)

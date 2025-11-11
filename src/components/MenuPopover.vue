@@ -1,17 +1,25 @@
 <template>
-  <ion-content>
-    <ion-list>
-      <template v-if="!showAlgorithmSubmenu">
-        <ion-item button @click="showAlgorithmSubmenu = true">Algorismes</ion-item>
-        <ion-item button @click="showInfo">Informació</ion-item>
-      </template>
-
-      <template v-else>
-        <ion-item button @click="selectAlgorithm('desfibrillable')">Desfibril·lable</ion-item>
-        <ion-item button @click="selectAlgorithm('no_desfibrillable')">No desfibril·lable</ion-item>
-        <ion-item button @click="showAlgorithmSubmenu = false">Enrere</ion-item>
-      </template>
+  <ion-content class="p-0">
+    <ion-list class="p-0 menu-list">
+      <ion-item button @click="selectAlgorithm('shockable')">Desfibril·lable</ion-item>
+      <ion-item button @click="selectAlgorithm('non_shockable')">No desfibril·lable</ion-item>
     </ion-list>
+
+    <ion-modal
+        :is-open="selectedImage !== null"
+        @didDismiss="selectedImage = null"
+        :initial-breakpoint="1"
+        :breakpoints="[1]"
+    >
+      <ion-content class="bg-black flex items-center justify-center">
+        <img
+            :src="selectedImage"
+            class="w-full h-full object-contain"
+            alt="algorisme"
+        />
+      </ion-content>
+    </ion-modal>
+
   </ion-content>
 </template>
 
@@ -19,17 +27,27 @@
 import { ref } from 'vue'
 import { popoverController } from '@ionic/vue'
 
-const showAlgorithmSubmenu = ref(false)
-
-const showInfo = async () => {
-  console.log('Mostrar informació')
-  const popover = await popoverController.getTop()
-  if (popover) await popover.dismiss()
-}
+const selectedImage = ref(null)
 
 const selectAlgorithm = async (type) => {
-  console.log('Algorisme seleccionat:', type)
+  selectedImage.value = type === 'shockable'
+      ? '/images/alritme desfibril·Lable.jpg'
+      : '/images/algoritme no desfibril·lable.jpg'
+
   const popover = await popoverController.getTop()
   if (popover) await popover.dismiss()
 }
 </script>
+
+<style scoped>
+.menu-list {
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+ion-item {
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+  --min-height: 42px;
+}
+</style>
