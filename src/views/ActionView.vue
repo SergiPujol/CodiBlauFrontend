@@ -359,8 +359,6 @@ const cycleStartTime = ref(null)
 const cycleElapsedSeconds = ref(0)
 let cycleIntervalId = null
 
-const openMenu = ref(false)
-
 const shockableCycleCount = ref(0)
 const totalCycleCount = ref(0)
 
@@ -368,18 +366,14 @@ const lastAdrenalineCycle = ref(0)
 const lastAmiodaroneCycle = ref(0)
 const shockDoneThisCycle = ref(false)
 
+const formattedTime = computed(() => formatSeconds(elapsedSeconds.value))
+const formattedCycleTime = computed(() => formatSeconds(cycleElapsedSeconds.value))
+const formattedAdrenalineTime = computed(() => formatSeconds(adrenalineTime.value))
+
 const isInitialRhythmLoading = ref(false)
 
 const sessionFinishedEnabled = ref(false)
 const clocksPaused = ref(false)
-
-let elapsedBeforeROSC = 0
-
-const formattedAdrenalineTime = computed(() => {
-  const minutes = Math.floor(adrenalineTime.value / 60).toString().padStart(2, '0')
-  const seconds = (adrenalineTime.value % 60).toString().padStart(2, '0')
-  return `${minutes}:${seconds}`
-})
 
 const openMenuPopover = async (e) => {
   const popover = await popoverController.create({
@@ -388,16 +382,6 @@ const openMenuPopover = async (e) => {
     translucent: true
   })
   await popover.present()
-}
-
-const showAlgorithm = () => {
-  console.log('Mostrar algorismes')
-  openMenu.value = false
-}
-
-const showInfo = () => {
-  console.log('Mostrar informació')
-  openMenu.value = false
 }
 
 const changingRhythm = ref(null)
@@ -471,12 +455,6 @@ const startCycleTimer = () => {
     cycleElapsedSeconds.value = Math.floor((now - cycleStartTime.value) / 1000)
   }, 1000)
 }
-
-const formattedCycleTime = computed(() => {
-  const minutes = Math.floor(cycleElapsedSeconds.value / 60).toString().padStart(2, '0')
-  const seconds = (cycleElapsedSeconds.value % 60).toString().padStart(2, '0')
-  return `${minutes}:${seconds}`
-})
 
 const handleRhythm = async (rhythm) => {
   // Primera selecció de ritme
@@ -617,7 +595,6 @@ const startSessionWithRhythm = async (rhythm) => {
 }
 const handleExitus = async () => {
   try {
-    await sendAction('exitus')
     await confirmStopSession('exitus')
   } catch (err) {
     console.error("Error acabant sessió amb Èxitus:", err)
@@ -739,11 +716,11 @@ const selectEvent = async () => {
   await actionSheet.present()
 }
 
-const formattedTime = computed(() => {
-  const minutes = Math.floor(elapsedSeconds.value / 60).toString().padStart(2, '0')
-  const seconds = (elapsedSeconds.value % 60).toString().padStart(2, '0')
-  return `${minutes}:${seconds}`
-})
+const formatSeconds = (seconds) => {
+  const mins = Math.floor(seconds / 60).toString().padStart(2, '0')
+  const secs = (seconds % 60).toString().padStart(2, '0')
+  return `${mins}:${secs}`
+}
 
 const stopSession = async () => {
   if (!sessionId.value) return
@@ -865,6 +842,7 @@ const confirmStopSession = async (endType = 'terminus') => {
         text: 'Sí, finalitzar sense PDF',
         role: 'confirm',
         handler: async () => {
+          await sendAction('exitus')
           await stopSession()
         }
       },
@@ -873,6 +851,7 @@ const confirmStopSession = async (endType = 'terminus') => {
         role: 'confirm',
         handler: async () => {
           try {
+            await sendAction('exitus')
             await generatePdfForSession()
           } catch (err) {
             console.error("Error generant PDF:", err)
