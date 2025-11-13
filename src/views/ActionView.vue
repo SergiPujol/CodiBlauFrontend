@@ -28,7 +28,9 @@
           <template v-else>
             <p
                 class="text-2xl font-bold tracking-wide"
-                :style="{ color: isShockable ? '#374151' : '#930614' }"
+                :style="{
+    color: hasROSC ? '#065f46' : (isShockable ? '#374151' : '#930614')
+  }"
             >
               Codi Blau
             </p>
@@ -43,9 +45,9 @@
       <h2
           v-if="selectedRhythm"
           class="text-center !font-bold !text-4xl"
-          :style="{ color: isShockable ? '#3b82f6' : '#b30519' }"
+          :style="{ color: hasROSC ? '#04c236' : (isShockable ? '#3b82f6' : '#b30519') }"
       >
-        {{ selectedRhythm }}
+        {{ hasROSC ? 'ROSC' : selectedRhythm }}
       </h2>
 
       <!-- 🔹 Rellotges -->
@@ -181,9 +183,6 @@
           <template v-else>
             {{ rhythm }}
           </template>
-          <template v-else>
-            {{ rhythm }}
-          </template>
         </ion-button>
         <ion-button
             expand="block"
@@ -213,6 +212,7 @@
             fill="outline"
             class="btn-adrenaline"
             :class="{'intense-blink': adrenalineBlink}"
+            :disabled="hasROSC"
             @click="preventDoubleClick('adrenaline', () => sendAction('adrenaline'))"
         >
           Adrenalina
@@ -223,7 +223,7 @@
             fill="outline"
             class="btn-shock"
             :class="{'intense-blink': shockBlink}"
-            :disabled="!isShockable"
+            :disabled="!isShockable || hasROSC"
         @click="preventDoubleClick('shock', () => sendAction('shock'))"
         >
         <ion-icon slot="icon-only" :icon="flash"/>
@@ -234,6 +234,7 @@
             fill="outline"
             class="btn-amiodarone"
             :class="{'intense-blink': amiodaroneBlink}"
+            :disabled="hasROSC"
             @click="preventDoubleClick('amiodarone', () => selectAmiodarone())"
         >
           Amiodarona
@@ -243,6 +244,7 @@
             expand="block"
             fill="outline"
             class="btn-other"
+            :disabled="hasROSC"
             @click="preventDoubleClick('other', () => enterOtherMedication())"
         >
           Altres medicacions
@@ -252,6 +254,7 @@
             expand="block"
             fill="outline"
             class="btn-event"
+            :disabled="hasROSC"
             @click="preventDoubleClick('event', () => selectEvent())"
         >
           Esdeveniments
@@ -275,9 +278,15 @@
             fill="outline"
             color="success"
             class="font-bold text-white"
-            @click="preventDoubleClick('rosc', handleROSC)"
+            @click="preventDoubleClick('rosc', () => handleRhythm('ROSC'))"
+            :disabled="changingRhythm === 'ROSC' || hasROSC"
         >
-          ROSC
+          <template v-if="changingRhythm === 'ROSC'">
+            <ion-spinner name="crescent"></ion-spinner>
+          </template>
+          <template v-else>
+            ROSC
+          </template>
         </ion-button>
       </div>
 
@@ -288,7 +297,7 @@
             class="font-bold"
             style="--background: #e5e7eb; --color: #333d4b;"
             :disabled="!hasROSC"
-        @click="preventDoubleClick('finish', handleFinishSession)"
+        @click="preventDoubleClick('finish', confirmStopSession)"
         >
         Finalitzar sessió
         </ion-button>
@@ -483,10 +492,6 @@ const handleRhythm = async (rhythm) => {
         hasROSC.value = true
         selectedRhythm.value = 'ROSC'
 
-        // Guardem el temps abans de ROSC per reprendre després
-        elapsedBeforeROSC = elapsedSeconds.value
-        console.log("ROSC detectat. Rellotges aturats a " + elapsedBeforeROSC + "s")
-
         return
       }
 
@@ -509,9 +514,6 @@ const handleRhythm = async (rhythm) => {
       pauseAllTimers()
       await sendAction('rosc')
 
-      // Guardem el temps abans de ROSC
-      elapsedBeforeROSC = elapsedSeconds.value
-      console.log("ROSC detectat. Rellotges aturats a " + elapsedBeforeROSC + "s")
       return
     }
 
@@ -527,8 +529,6 @@ const pauseAllTimers = () => {
 }
 
 const startSessionWithRhythm = async (rhythm) => {
-  hasROSC.value = false
-
   if (!sessionId.value) {
     try {
       const now = new Date()
@@ -590,8 +590,15 @@ const startSessionWithRhythm = async (rhythm) => {
 
       selectedRhythm.value = rhythm
 
-      if (hasROSC.value === false && elapsedBeforeROSC > 0) {
-        sessionStartTime.value = new Date(Date.now() - elapsedBeforeROSC * 1000)
+      if (hasROSC.value) {
+        console.log('Nou ritme després de ROSC: reinici de rellotge i fàrmacs')
+        sessionStartTime.value = new Date()
+        elapsedSeconds.value = 0
+        adrenalineTime.value = 0
+        shockableCycleCount.value = 1
+        totalCycleCount.value = 1
+        shockDoneThisCycle.value = false
+        hasROSC.value = false
       }
 
       if (intervalId) clearInterval(intervalId)
@@ -623,11 +630,6 @@ const handleROSC = async () => {
   pauseAllTimers()
   clocksPaused.value = true
   sessionFinishedEnabled.value = true
-}
-
-const handleFinishSession = async () => {
-  if (!sessionFinishedEnabled.value) return
-  confirmStopSession('finish')
 }
 
 const adrenalineBlink = computed(() => {
@@ -747,7 +749,6 @@ const stopSession = async () => {
   if (!sessionId.value) return
 
   try {
-    if (!hasROSC.value) {
       const now = new Date()
       const end_time = now.toISOString().slice(0, 19).replace('T', ' ')
 
@@ -756,9 +757,6 @@ const stopSession = async () => {
       })
 
       console.log('Sessió acabada correctament (end_time registrat)')
-    } else {
-      console.log('Sessió ja finalitzada amb ROSC, no s’actualitza end_time')
-    }
 
     if (intervalId) clearInterval(intervalId)
     if (adrenalineInterval.value) clearInterval(adrenalineInterval.value)
@@ -780,7 +778,6 @@ const deleteSession = async () => {
   try {
     await api.delete(`/sessions/${sessionId.value}`)
 
-    // Netejar intervals
     if (intervalId) clearInterval(intervalId)
     if (adrenalineInterval.value) clearInterval(adrenalineInterval.value)
     if (cycleIntervalId) clearInterval(cycleIntervalId)
@@ -790,9 +787,9 @@ const deleteSession = async () => {
     cycleId.value = null
     cycleNumber.value = null
     selectedRhythm.value = null
+    hasROSC.value = false
 
-    // Tornar a Home
-    await router.push({name: 'Home'})
+    await router.push({name: 'HomeView'})
   } catch (err) {
     console.error("Error eliminant sessió:", err)
   }

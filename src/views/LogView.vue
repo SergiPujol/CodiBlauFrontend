@@ -62,17 +62,12 @@
         <!-- 2n terç: rellotges i info -->
         <div class="flex-1 flex flex-col items-center justify-center px-8 min-h-[450px] gap-y-6">
           <!-- Ritme actual -->
-          <div class="text-center mt-5"> <!-- menys marge superior -->
-            <div
-                class="text-4xl font-bold"
-                :class="{
-        'text-blue-500': isShockable(currentCycle?.rhythm_type),
-        'text-red-500': !isShockable(currentCycle?.rhythm_type)
-      }"
-            >
-              {{ currentCycle?.rhythm_type }}
+          <div class="text-center mt-5">
+            <div class="text-4xl font-bold" :style="{ color: displayCycleColor }">
+              {{ displayCycleText }}
             </div>
           </div>
+
 
           <!-- Rellotges -->
           <div class="grid grid-cols-3 gap-x-16 gap-y-8 justify-items-center text-center mx-auto">
@@ -236,16 +231,30 @@ let sessionTimer = null, cycleTimer = null, adrenalineTimer = null
 
 const ADRENALINE_EXPIRE_SECONDS = 240
 
+const displayCycleText = computed(() => {
+  if (roscActive.value) return 'ROSC'
+  return currentCycle.value?.rhythm_type || ''
+})
+
+const displayCycleColor = computed(() => {
+  if (roscActive.value) return '#04c236'
+  return isShockable(currentCycle.value?.rhythm_type) ? '#3b82f6' : '#b30519'
+})
+
+const roscActive = ref(false)
+
 const sessionEnded = ref(false)
 
 const headerColor = computed(() => {
+  if (roscActive.value) return '#9ff2b6'
+
   const mapping = {
     'FV': '#dbeafe',
     'TV SP': '#dbeafe',
     'Asistòlia': 'rgba(251,105,111,0.73)',
     'AESP': 'rgba(251,105,111,0.73)',
-    'ROSC': '#bbf7d0',
   }
+
   return mapping[currentCycle.value?.rhythm_type] || 'white'
 })
 
@@ -277,10 +286,7 @@ const isShockable = (rhythm) => {
 function handlePatientName(inputs) {
   showConciliateAlert.value = false
   const name = inputs.patientName
-  if (name) {
-    alert(`Pacient introduït: ${name}`)
-    // funció de conciliació
-  }
+  //Funció de conciliació
 }
 
 function firstValidTimestamp(...candidates) {
@@ -312,7 +318,6 @@ const formattedAdrenalineTime = computed(() => {
   return `${min}:${sec}`
 })
 
-// Scroll al log
 const scrollToBottom = async () => {
   await nextTick()
   if (logContainer.value) logContainer.value.scrollTop = logContainer.value.scrollHeight
@@ -386,7 +391,8 @@ const typeTranslations = {
   iot: 'IOT',
   supraglottic: 'Accés supraglòtic',
   cardiocompressor: 'Cardiocompressor',
-  capnograph: 'Capnògraf'
+  capnograph: 'Capnògraf',
+  exitus: 'Èxitus'
 }
 
 const typeColors = {
@@ -395,7 +401,7 @@ const typeColors = {
   'amiodarone 150': 'bg-purple-100 text-purple-800',
   defibrillation: 'bg-yellow-100 text-yellow-800',
   shock: 'bg-yellow-100 text-yellow-800',
-  rosc: 'bg-teal-100 text-teal-800',
+  rosc: 'bg-emerald-100 text-emerald-800',
   other_medication: 'bg-gray-100 text-gray-700',
   event: 'bg-sky-100 text-sky-800',
   iv: 'bg-cyan-100 text-cyan-800',
@@ -410,7 +416,7 @@ const cycleLog = computed(() => {
   return actions.value
       .filter(a =>
           a.isCycle ||
-          ['adrenaline', 'shock'].includes((a.type || '').toLowerCase()) ||
+          ['adrenaline', 'shock', 'rosc'].includes((a.type || '').toLowerCase()) ||
           (a.type || '').toLowerCase().includes('adrenalina')
       )
       .sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
@@ -658,6 +664,13 @@ onMounted(async () => {
       actions.value.push(newAction)
       actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
 
+      // Si l'acció es ROSC, es paren els rellotges
+      if (String(event.type || '').toLowerCase() === 'rosc') {
+        console.log('ROSC detectat: pausa tots els rellotges')
+        roscActive.value = true
+        clearTimers()
+      }
+
       // Només adrenalina toca el timer
       if (String(event.type || '').toLowerCase().includes('adrenaline') ||
           String(event.type || '').toLowerCase().includes('adrenalina')) {
@@ -685,6 +698,18 @@ onMounted(async () => {
     currentCycle.value = {number: event.number, rhythm_type: event.rhythm_type}
 
     const cElapsed = startMs ? Math.floor((Date.now() - startMs) / 1000) : 0
+
+    if (roscActive.value) {
+      console.log('Inici de cicle després de ROSC: reinici rellotges a zero')
+      sessionElapsed.value = 0
+      cycleElapsed.value = 0
+      adrenalineElapsed.value = 0
+      roscActive.value = false
+
+      startSessionTimer()
+      startCycleTimer()
+    }
+
     startCycleTimer(cElapsed)
 
     actions.value.sort((a, b) => new Date(a.executed_at) - new Date(b.executed_at))
@@ -695,7 +720,6 @@ onMounted(async () => {
 })
 
 </script>
-
 <style>
 .intense-blink {
   animation: blink 1s steps(2, start) infinite;
