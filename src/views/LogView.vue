@@ -36,7 +36,7 @@
 
       <!-- Contenidor principal -->
       <div class="flex h-[calc(100vh-56px)] w-full gap-4">
-        <!-- 1r terç: llista de cicles -->
+        <!-- 1r terç: llista de resum -->
         <div class="flex justify-center">
           <div class="w-80 h-full flex flex-col bg-gray-50 rounded-lg shadow-inner p-4 overflow-y-auto">
             <ul class="space-y-2 text-sm">
@@ -148,15 +148,20 @@
           </div>
 
           <!-- Info cicle -->
-          <div class="mb-4 text-center">
-            <div class="text-sm mt-4 text-gray-500">Cicle actual: {{ currentCycle?.number }}</div>
-            <div class="text-sm mt-4 text-gray-500">Sessió #{{ sessionNumber }}</div>
+          <div class="w-full mt-6">
+            <div class="text-center text-sm text-gray-500">Cicle actual: {{ currentCycle?.number }}</div>
+
+          </div>
+          <div class="absolute bottom-0 w-full flex justify-between items-center px-85 py-4">
             <img
                 v-if="sessionNumber"
                 src="/src/assets/logo-hospital-trueta.svg"
                 alt="Logo Trueta"
-                class="mx-auto mt-4 h-8 w-auto opacity-80"
+                class="h-8 w-auto opacity-80"
             />
+            <div class="text-sm text-gray-500">
+              Sessió #{{ sessionNumber }}
+            </div>
           </div>
         </div>
 
@@ -482,8 +487,6 @@ onMounted(async () => {
     }
   }
 
-  // ---------------------------------------------------------------------
-
   try {
     const res = await api.get(`/sessions/${sessionId}`)
     const session = res.data
@@ -596,7 +599,7 @@ onMounted(async () => {
       startCycleTimer(cElapsed)
     }
 
-    // Adrenalina: agafa l'última acció d'adrenalina
+    // Agafa l'última acció d'adrenalina
     const adrenalineActions = actions.value.filter(a =>
         String(a.type || '').toLowerCase().includes('adrenaline') ||
         String(a.type || '').toLowerCase().includes('adrenalina')
@@ -634,9 +637,6 @@ onMounted(async () => {
       startSessionTimer(sElapsed)
 
     }
-
-    // ----------------------------------------------------------------
-
   } catch (err) {
     console.error('Error carregant sessió:', err)
   } finally {
@@ -671,7 +671,6 @@ onMounted(async () => {
         clearTimers()
       }
 
-      // Només adrenalina toca el timer
       if (String(event.type || '').toLowerCase().includes('adrenaline') ||
           String(event.type || '').toLowerCase().includes('adrenalina')) {
         startAdrenalineTimerFromMs(executedMs ?? event.executed_at)
@@ -716,7 +715,7 @@ onMounted(async () => {
     scrollToBottom()
   })
 
-  channel.error(error => console.error('❌ Error al canal:', error))
+  channel.error(error => console.error('Error al canal:', error))
 })
 
 </script>
@@ -724,19 +723,16 @@ onMounted(async () => {
 .intense-blink {
   animation: blink 1s steps(2, start) infinite;
 }
-
 @keyframes blink {
   to {
     visibility: hidden;
   }
 }
-
 .image-modal::part(backdrop) {
   background: rgba(0,0,0,0.6);
 }
-
 .image-modal::part(content) {
-  width: 95vw;        /* mida màxima */
+  width: 95vw;
   height: 95vh;
   display: flex;
   align-items: center;
@@ -744,7 +740,4 @@ onMounted(async () => {
   border-radius: 12px;
   overflow: hidden;
 }
-
-
-
 </style>

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ✅ Inputs */
+/* Inputs */
 input.p-inputtext,
 textarea.p-inputtextarea {
   background-color: #ffffff !important;
@@ -16,7 +16,7 @@ textarea.p-inputtextarea:focus {
   box-shadow: 0 0 0 2px #A6BDD5 !important;
 }
 
-/* ✅ Botons */
+/* Botons */
 .p-button {
   background-color: #7392b1 !important;
   border: none !important;
@@ -32,7 +32,7 @@ textarea.p-inputtextarea:focus {
   color: white !important;
 }
 
-/* ✅ Dropdowns i Calendar */
+/* Dropdowns i Calendar */
 .p-dropdown,
 .p-calendar {
   background-color: #ffffff !important;
@@ -46,7 +46,7 @@ textarea.p-inputtextarea:focus {
   box-shadow: 0 0 0 2px #A6BDD5 !important;
 }
 
-/* ✅ Diàlegs (modals) */
+/* Diàlegs i modals) */
 .p-dialog {
   border: 1px solid #d2dfed !important;
   border-radius: 1rem !important;
@@ -62,7 +62,6 @@ textarea.p-inputtextarea:focus {
   background-color: #f2f7fb !important;
 }
 
-/* ✅ Toasts */
 .p-toast {
   z-index: 9999 !important;
 }
@@ -72,7 +71,7 @@ textarea.p-inputtextarea:focus {
   color: #1f2b3a !important;
 }
 
-/* ✅ Missatges */
+/* Missatges */
 .p-message {
   background-color: #f2f7fb !important;
   border: 1px solid #d2dfed !important;
@@ -88,7 +87,6 @@ textarea.p-inputtextarea:focus {
   border-left: 5px solid #64b5f6 !important;
 }
 
-/* ✅ Overlays: popups, calendaris, etc. */
 .p-overlaypanel,
 .p-datepicker,
 .p-dialog,
@@ -127,7 +125,6 @@ textarea.p-inputtextarea:focus {
   background-color: #D2DFED !important;
 }
 
-/* ✅ Icona calendari (input) */
 .p-calendar .p-datepicker-trigger {
   background-color: #7392B1 !important;
   border-radius: 0.375rem !important;
@@ -153,7 +150,6 @@ textarea.p-inputtextarea:focus {
   stroke: #A6BDD5 !important;
 }
 
-/* ✅ Contingut calendari desplegat */
 .p-datepicker {
   background-color: #ffffff !important;
   color: #1f2b3a !important;
@@ -181,14 +177,14 @@ textarea.p-inputtextarea:focus {
 }
 
 .confirm-accept-btn {
-  background-color: #ef4444 !important; /* Tailwind red-500 */
+  background-color: #ef4444 !important;
   color: white !important;
   border: none !important;
   transition: background-color 0.2s ease;
 }
 
 .confirm-accept-btn:hover {
-  background-color: #dc2626 !important; /* Tailwind red-600 */
+  background-color: #dc2626 !important;
 }
 .p-button:hover {
   background-color: #5c7894 !important;
@@ -212,7 +208,7 @@ button.confirm-accept-btn:hover,
 }
 
 .dialog-content-custom {
-  background-color: #f9fbfd; /* fons suau blau-gris */
+  background-color: #f9fbfd;
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -225,10 +221,9 @@ button.confirm-accept-btn:hover,
 }
 
 :root {
-  /* 🔹 Color personalitzat per als botons d’accions */
-  --ion-color-custom: #bfdbfe; /* blau clar (Tailwind blue-200) */
+  --ion-color-custom: #bfdbfe;
   --ion-color-custom-rgb: 191, 219, 254;
-  --ion-color-custom-contrast: #000000; /* text negre */
+  --ion-color-custom-contrast: #000000;
   --ion-color-custom-contrast-rgb: 0, 0, 0;
   --ion-color-custom-shade: #a6c4eb;
   --ion-color-custom-tint: #d0e5ff;

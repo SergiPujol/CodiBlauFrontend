@@ -211,7 +211,6 @@
             expand="block"
             fill="outline"
             class="btn-adrenaline"
-            :class="{'intense-blink': adrenalineBlink}"
             :disabled="hasROSC"
             @click="preventDoubleClick('adrenaline', () => sendAction('adrenaline'))"
         >
@@ -224,7 +223,7 @@
             class="btn-shock"
             :class="{'intense-blink': shockBlink}"
             :disabled="!isShockable || hasROSC"
-        @click="preventDoubleClick('shock', () => sendAction('shock'))"
+        @click="sendAction('shock')"
         >
         <ion-icon slot="icon-only" :icon="flash"/>
         </ion-button>
@@ -233,7 +232,6 @@
             expand="block"
             fill="outline"
             class="btn-amiodarone"
-            :class="{'intense-blink': amiodaroneBlink}"
             :disabled="hasROSC"
             @click="preventDoubleClick('amiodarone', () => selectAmiodarone())"
         >
@@ -362,8 +360,6 @@ let cycleIntervalId = null
 const shockableCycleCount = ref(0)
 const totalCycleCount = ref(0)
 
-const lastAdrenalineCycle = ref(0)
-const lastAmiodaroneCycle = ref(0)
 const shockDoneThisCycle = ref(false)
 
 const formattedTime = computed(() => formatSeconds(elapsedSeconds.value))
@@ -432,12 +428,9 @@ const preventDoubleClick = (actionName, callback) => {
   const now = Date.now()
 
   if (lastClicked.value.name === actionName && (now - lastClicked.value.timestamp < 1200)) {
-    console.log("Clic repetit evitat:", actionName)
     return
   }
-
   lastClicked.value = {name: actionName, timestamp: now}
-
   callback()
 }
 
@@ -609,40 +602,10 @@ const handleROSC = async () => {
   sessionFinishedEnabled.value = true
 }
 
-const adrenalineBlink = computed(() => {
-  if (!sessionId.value) return false
-
-  if (!isShockable.value) {
-    // No desfibril·lable: adrenalina cada 4 minuts
-    return adrenalineTime.value >= 240
-  } else {
-    // Desfibril·lable: parpelleja després del 3r i 5è cicle desfibril·lable
-    if ([3, 5].includes(shockableCycleCount.value)) {
-      return lastAdrenalineCycle.value < shockableCycleCount.value
-    }
-    // Posteriorment, cada 4 minuts (2 cicles)
-    if (shockableCycleCount.value > 5) {
-      const shouldBlink = (shockableCycleCount.value - 5) % 2 === 0
-      return shouldBlink && lastAdrenalineCycle.value < shockableCycleCount.value
-    }
-  }
-  return false
-})
-
-const amiodaroneBlink = computed(() => {
-  if (!sessionId.value || !isShockable.value) return false
-
-  // Només als cicles shockables 3 i 5
-  if ([3, 5].includes(shockableCycleCount.value)) {
-    return lastAmiodaroneCycle.value < shockableCycleCount.value
-  }
-
-  return false
-})
-
 const shockBlink = computed(() => {
   return isShockable.value && !shockDoneThisCycle.value
 })
+
 const sendAction = async (type, value = null) => {
   if (!sessionId.value || !cycleId.value) return
   const now = new Date()
@@ -653,12 +616,8 @@ const sendAction = async (type, value = null) => {
     const res = await api.post(`/sessions/${sessionId.value}/actions`, data)
     console.log("Acció enviada:", res.data)
     if (type === 'adrenaline') {
-      lastAdrenalineCycle.value = shockableCycleCount.value
       startAdrenalineTimer()
       adrenalineTime.value = 0
-    }
-    if (type === 'amiodarone 300' || type === 'amiodarone 150') {
-      lastAmiodaroneCycle.value = shockableCycleCount.value
     }
     if (type === 'shock') {
       shockDoneThisCycle.value = true
@@ -681,7 +640,7 @@ const selectAmiodarone = async () => {
   await actionSheet.present()
 }
 
-// Altres meds
+// Altres medicacions
 const enterOtherMedication = async () => {
   const alert = await alertController.create({
     header: 'Altres medicacions',

@@ -245,7 +245,7 @@ onMounted(() => loadSessions())
 ion-modal {
   --width: 97%;
   --max-width: 600px;
-  --height: 80vh; /* ocupa la major part de la pantalla vertical */
+  --height: 80vh;
   --border-radius: 20px;
   margin: 0 auto;
 }
@@ -255,12 +255,12 @@ ion-modal {
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* reparteix espai i evita scroll */
+  justify-content: space-between;
   height: 100%;
 }
 
 .no-scroll {
-  overflow: hidden; /* elimina scroll */
+  overflow: hidden;
 }
 
 .section {
